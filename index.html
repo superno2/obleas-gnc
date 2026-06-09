@@ -1,0 +1,1733 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro GNC - Beta local</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #657381;
+      --line: #d9e1e8;
+      --brand: #176b87;
+      --brand-dark: #104f65;
+      --ok: #13795b;
+      --warn: #b7791f;
+      --bad: #b42318;
+      --soft-ok: #e7f6ef;
+      --soft-warn: #fff4d8;
+      --soft-bad: #ffe8e5;
+      --focus: #f0b429;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    header {
+      background: #0f2530;
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      color: #b7c8d3;
+      font-size: 14px;
+    }
+
+    .session {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .user-pill {
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+      padding: 7px 11px;
+      color: #dce7ee;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.08);
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .login-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background: linear-gradient(135deg, #0f2530, #176b87 55%, #f4f6f8 55%);
+    }
+
+    .login-box {
+      width: min(460px, 100%);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 20px 50px rgba(15, 37, 48, 0.22);
+      overflow: hidden;
+    }
+
+    .login-head {
+      padding: 22px;
+      background: #0f2530;
+      color: #fff;
+    }
+
+    .login-head h1 {
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .login-head p {
+      margin: 0;
+      color: #b7c8d3;
+      font-size: 14px;
+    }
+
+    .login-body { padding: 22px; }
+
+    .app-shell[hidden], .login-screen[hidden] {
+      display: none;
+    }
+
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 22px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+    }
+
+    section, aside {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(15, 37, 48, 0.06);
+    }
+
+    .panel-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .content { padding: 18px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #344553;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid #bcc8d3;
+      border-radius: 6px;
+      padding: 10px 11px;
+      font-size: 14px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 78px;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus, select:focus, button:focus {
+      outline: 3px solid rgba(240, 180, 41, 0.35);
+      outline-offset: 1px;
+      border-color: var(--focus);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 13px;
+    }
+
+    .field { margin-bottom: 13px; }
+
+    .form-block {
+      border-top: 1px solid var(--line);
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+
+    .form-block h3 {
+      margin: 0 0 13px;
+      font-size: 14px;
+      color: #223746;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .inline-tools {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .import-box {
+      margin-top: 10px;
+      border: 1px dashed #b7c7d1;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfd;
+    }
+
+    .import-box textarea {
+      min-height: 110px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      background: var(--brand);
+      color: #fff;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover { background: var(--brand-dark); }
+
+    .ghost {
+      background: #eef3f6;
+      color: #1d3946;
+      border: 1px solid #c9d7df;
+    }
+
+    .ghost:hover { background: #dfe9ee; }
+
+    .danger {
+      background: #fff1ef;
+      color: var(--bad);
+      border: 1px solid #ffc8c1;
+    }
+
+    .danger:hover { background: #ffe1dd; }
+
+    .top-tools {
+      display: grid;
+      grid-template-columns: 1fr 180px 160px;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfd;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 11px 8px;
+      vertical-align: top;
+    }
+
+    th {
+      color: #405465;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      background: #f7fafc;
+    }
+
+    tr:hover td { background: #fafcfd; }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .vigente { color: var(--ok); background: var(--soft-ok); }
+    .proximo { color: var(--warn); background: var(--soft-warn); }
+    .vencido { color: var(--bad); background: var(--soft-bad); }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .row-actions button {
+      padding: 7px 9px;
+      font-size: 12px;
+    }
+
+    .attachments {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 9px;
+      margin-top: 8px;
+    }
+
+    .thumb {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #f8fafb;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 6px;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 82px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed #bac6d0;
+      border-radius: 8px;
+      background: #fbfcfd;
+    }
+
+    .print-area { display: none; }
+
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+      .top-tools { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 12px; }
+      header { padding: 15px; }
+      .grid, .stats { grid-template-columns: 1fr; }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+      td {
+        border-bottom: 0;
+        padding: 8px 10px;
+      }
+      td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+    }
+
+    @media print {
+      body { background: #fff; }
+      header, main { display: none; }
+      .print-area {
+        display: block;
+        padding: 26px;
+        color: #111;
+      }
+      .print-title {
+        border-bottom: 2px solid #111;
+        padding-bottom: 10px;
+        margin-bottom: 18px;
+      }
+      .print-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 28px;
+      }
+      .print-label {
+        font-weight: 700;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .print-notes {
+        margin-top: 18px;
+        border-top: 1px solid #aaa;
+        padding-top: 12px;
+      }
+      .print-section {
+        margin-top: 18px;
+        border-top: 1px solid #aaa;
+        padding-top: 10px;
+      }
+      .print-section h2 {
+        font-size: 15px;
+        margin: 0 0 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-screen" id="loginScreen">
+    <form class="login-box" id="loginForm">
+      <div class="login-head">
+        <h1>Registro GNC</h1>
+        <p>Ingreso beta para probar el sistema antes de llevarlo a la nube.</p>
+      </div>
+      <div class="login-body">
+        <div class="field">
+          <label for="loginName">Email</label>
+          <input id="loginName" type="email" required placeholder="tu@email.com">
+        </div>
+        <div class="field">
+          <label for="loginPassword">Contraseña</label>
+          <input id="loginPassword" type="password" required minlength="6" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="field">
+          <label for="loginPlan">Plan</label>
+          <select id="loginPlan">
+            <option value="Beta gratis">Beta gratis</option>
+            <option value="Suscripción individual">Suscripción individual</option>
+            <option value="Equipo / varios usuarios">Equipo / varios usuarios</option>
+          </select>
+        </div>
+        <button type="submit">Ingresar / crear cuenta</button>
+        <p class="muted">Con Supabase configurado, esta cuenta se valida online.</p>
+      </div>
+    </form>
+  </div>
+
+  <div class="app-shell" id="appShell" hidden>
+    <header>
+      <div>
+        <h1>Registro de clientes GNC</h1>
+        <p>Beta local: clientes, vencimientos, adjuntos, alertas e impresión.</p>
+      </div>
+      <div class="session">
+        <span class="user-pill" id="userLabel">Usuario beta</span>
+        <button class="ghost" id="seedBtn" type="button">Cargar ejemplo</button>
+        <button class="ghost" id="logoutBtn" type="button">Salir</button>
+      </div>
+    </header>
+
+    <main>
+    <aside>
+      <div class="panel-head">
+        <h2 id="formTitle">Nuevo registro</h2>
+      </div>
+      <div class="content">
+        <form id="clientForm">
+          <input type="hidden" id="clientId">
+
+          <div class="grid">
+            <div class="field">
+              <label for="procedureDate">Fecha</label>
+              <input id="procedureDate" readonly>
+            </div>
+            <div class="field">
+              <label for="waferNumber">Número de oblea</label>
+              <input id="waferNumber" placeholder="Oblea">
+            </div>
+          </div>
+
+          <div class="form-block">
+            <h3>Vehículo</h3>
+            <div class="grid">
+              <div class="field">
+                <label for="vehicleBrand">Marca</label>
+                <input id="vehicleBrand" placeholder="Ej: Chevrolet">
+              </div>
+              <div class="field">
+                <label for="vehicleModel">Modelo</label>
+                <input id="vehicleModel" placeholder="Ej: Classic">
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="vehicleYear">Año</label>
+                <input id="vehicleYear" inputmode="numeric" placeholder="Ej: 2015">
+              </div>
+              <div class="field">
+                <label for="vehicleDomain">Dominio</label>
+                <input id="vehicleDomain" placeholder="AB123CD">
+                <div class="inline-tools">
+                  <button class="ghost" id="enargasBtn" type="button">Consultar ENARGAS</button>
+                  <span class="hint">Abre la consulta oficial y copia el dominio para pegarlo allí.</span>
+                </div>
+                <div class="import-box">
+                  <label for="enargasText">Pegar resultado de ENARGAS</label>
+                  <textarea id="enargasText" placeholder="Pegá acá el texto del resultado de la consulta por dominio"></textarea>
+                  <div class="inline-tools">
+                    <button class="ghost" id="importEnargasBtn" type="button">Importar datos</button>
+                    <span class="hint" id="importStatus">Completa los campos que pueda reconocer.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="injection">Inyección</label>
+                <select id="injection">
+                  <option value="">Seleccionar</option>
+                  <option value="Sí">Sí</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="vehicleType">Tipo de vehículo</label>
+                <select id="vehicleType">
+                  <option value="">Seleccionar</option>
+                  <option value="Taxi">Taxi</option>
+                  <option value="Pickup">Pickup</option>
+                  <option value="Particular">Particular</option>
+                  <option value="Bus">Bus</option>
+                  <option value="Oficial">Oficial</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-block">
+            <h3>Propietario</h3>
+            <div class="field">
+              <label for="ownerName">Nombre y apellido</label>
+              <input id="ownerName" required placeholder="Nombre completo">
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="ownerStreet">Dirección</label>
+                <input id="ownerStreet" placeholder="Calle">
+              </div>
+              <div class="field">
+                <label for="ownerStreetNumber">Número</label>
+                <input id="ownerStreetNumber" placeholder="Altura">
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="postalCode">Código postal</label>
+                <input id="postalCode" placeholder="CP">
+              </div>
+              <div class="field">
+                <label for="city">Localidad</label>
+                <input id="city" placeholder="Localidad">
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="province">Provincia</label>
+                <input id="province" placeholder="Provincia">
+              </div>
+              <div class="field">
+                <label for="phone">Teléfono</label>
+                <input id="phone" placeholder="Ej: 11 5555-5555">
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="documentType">Tipo de documento</label>
+                <select id="documentType">
+                  <option value="">Seleccionar</option>
+                  <option value="DNI">DNI</option>
+                  <option value="CUIT">CUIT</option>
+                  <option value="CUIL">CUIL</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="documentNumber">Número de documento</label>
+                <input id="documentNumber" placeholder="Número">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-block">
+            <h3>Regulador</h3>
+            <div class="grid">
+              <div class="field">
+                <label for="regulatorActualCode">Actual - Código</label>
+                <input id="regulatorActualCode" placeholder="Código">
+              </div>
+              <div class="field">
+                <label for="regulatorActualSerial">Actual - Número de serie</label>
+                <input id="regulatorActualSerial" placeholder="Número de serie">
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="regulatorInstallCode">Montaje - Código</label>
+                <input id="regulatorInstallCode" placeholder="Código">
+              </div>
+              <div class="field">
+                <label for="regulatorInstallSerial">Montaje - Número de serie</label>
+                <input id="regulatorInstallSerial" placeholder="Número de serie">
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="regulatorRemoveCode">Desmontaje - Código</label>
+                <input id="regulatorRemoveCode" placeholder="Código">
+              </div>
+              <div class="field">
+                <label for="regulatorRemoveSerial">Desmontaje - Número de serie</label>
+                <input id="regulatorRemoveSerial" placeholder="Número de serie">
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="regulatorCancelCode">Baja - Código</label>
+                <input id="regulatorCancelCode" placeholder="Código">
+              </div>
+              <div class="field">
+                <label for="regulatorCancelSerial">Baja - Número de serie</label>
+                <input id="regulatorCancelSerial" placeholder="Número de serie">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-block">
+            <h3>Cilindro</h3>
+            <div class="grid">
+              <div class="field">
+                <label for="cylinderCode">Código</label>
+                <input id="cylinderCode" placeholder="Código">
+              </div>
+              <div class="field">
+                <label for="cylinderSerial">Número de serie</label>
+                <input id="cylinderSerial" placeholder="Número de serie">
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="cylinderNew">Nuevo</label>
+                <select id="cylinderNew">
+                  <option value="">Seleccionar</option>
+                  <option value="Sí">Sí</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="cylinderOperation">Tipo de operación</label>
+                <select id="cylinderOperation">
+                  <option value="">Seleccionar</option>
+                  <option value="Modificación">Modificación</option>
+                  <option value="Sin cambios">Sin cambios</option>
+                  <option value="Desmontaje">Desmontaje</option>
+                  <option value="Baja">Baja</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="field">
+                <label for="cylinderManufactureDate">Fecha fabricación</label>
+                <input id="cylinderManufactureDate" placeholder="MM/AAAA">
+              </div>
+              <div class="field">
+                <label for="cylinderReviewDate">Fecha de revisado</label>
+                <input id="cylinderReviewDate" placeholder="MM/AAAA">
+              </div>
+            </div>
+            <div class="field">
+              <label for="cylinderCrpc">CRPC</label>
+              <input id="cylinderCrpc" placeholder="CRPC">
+            </div>
+          </div>
+
+          <div class="form-block">
+            <h3>Válvula de cilindro</h3>
+            <div class="grid">
+              <div class="field">
+                <label for="valveCode">Código</label>
+                <input id="valveCode" placeholder="Código">
+              </div>
+              <div class="field">
+                <label for="valveSerial">Número de serie</label>
+                <input id="valveSerial" placeholder="Número de serie">
+              </div>
+            </div>
+            <div class="field">
+              <label for="valveOperation">Tipo de operación</label>
+              <select id="valveOperation">
+                <option value="">Seleccionar</option>
+                <option value="Modificación">Modificación</option>
+                <option value="Sin cambios">Sin cambios</option>
+                <option value="Desmontaje">Desmontaje</option>
+                <option value="Baja">Baja</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-block">
+            <h3>Vencimientos</h3>
+            <div class="grid">
+            <div class="field">
+              <label for="waferDue">Vence oblea</label>
+              <input id="waferDue" type="date">
+            </div>
+            <div class="field">
+              <label for="hydraulicDue">Vence hidráulica</label>
+              <input id="hydraulicDue" type="date">
+            </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="attachments">Adjuntar JPG, PDF o TIFF</label>
+            <input id="attachments" type="file" accept="image/*,.jpg,.jpeg,.pdf,.tif,.tiff" multiple>
+            <div class="muted">En esta beta se guardan en este navegador.</div>
+            <div class="attachments" id="attachmentPreview"></div>
+          </div>
+
+          <div class="field">
+            <label for="notes">Observaciones</label>
+            <textarea id="notes" placeholder="Datos adicionales, trabajos realizados, comentarios"></textarea>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Guardar</button>
+            <button class="ghost" type="button" id="resetBtn">Limpiar</button>
+          </div>
+        </form>
+      </div>
+    </aside>
+
+    <section>
+      <div class="panel-head">
+        <h2>Clientes y vencimientos</h2>
+        <span class="muted" id="storageNote">Guardado local</span>
+      </div>
+      <div class="content">
+        <div class="stats">
+          <div class="stat"><strong id="countTotal">0</strong><span>Total registros</span></div>
+          <div class="stat"><strong id="countWarning">0</strong><span>Próximos a vencer</span></div>
+          <div class="stat"><strong id="countExpired">0</strong><span>Vencidos</span></div>
+        </div>
+
+        <div class="top-tools">
+          <input id="search" placeholder="Buscar por cliente, patente, DNI/CUIT u oblea">
+          <select id="statusFilter">
+            <option value="all">Todos</option>
+            <option value="proximo">Próximos 30 días</option>
+            <option value="vencido">Vencidos</option>
+            <option value="vigente">Vigentes</option>
+          </select>
+          <button class="ghost" id="exportBtn" type="button">Exportar datos</button>
+        </div>
+
+        <div id="tableWrap"></div>
+      </div>
+    </section>
+    </main>
+  </div>
+
+  <div class="print-area" id="printArea"></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const STORAGE_KEY = "gnc_clientes_beta_v1";
+    const SESSION_KEY = "gnc_sesion_beta_v1";
+    const WARNING_DAYS = 30;
+
+    const appShell = document.getElementById("appShell");
+    const loginScreen = document.getElementById("loginScreen");
+    const loginForm = document.getElementById("loginForm");
+    const userLabel = document.getElementById("userLabel");
+    const form = document.getElementById("clientForm");
+    const attachmentInput = document.getElementById("attachments");
+    const attachmentPreview = document.getElementById("attachmentPreview");
+    const tableWrap = document.getElementById("tableWrap");
+    const search = document.getElementById("search");
+    const statusFilter = document.getElementById("statusFilter");
+    const printArea = document.getElementById("printArea");
+    const formTitle = document.getElementById("formTitle");
+    const storageNote = document.getElementById("storageNote");
+
+    let clients = loadClients();
+    let pendingAttachments = [];
+    let currentUser = null;
+    const hasSupabaseConfig = Boolean(window.APP_CONFIG?.SUPABASE_URL && window.APP_CONFIG?.SUPABASE_ANON_KEY);
+    const supabaseClient = hasSupabaseConfig && window.supabase
+      ? window.supabase.createClient(window.APP_CONFIG.SUPABASE_URL, window.APP_CONFIG.SUPABASE_ANON_KEY)
+      : null;
+
+    function loadSession() {
+      try {
+        return JSON.parse(localStorage.getItem(SESSION_KEY));
+      } catch {
+        return null;
+      }
+    }
+
+    function saveSession(session) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    }
+
+    async function showApp(session) {
+      loginScreen.hidden = true;
+      appShell.hidden = false;
+      userLabel.textContent = `${session.name} · ${session.plan}`;
+      storageNote.textContent = currentUser ? "Guardado online" : "Guardado local";
+      if (currentUser) await loadCloudClients();
+      renderTable();
+    }
+
+    function showLogin() {
+      appShell.hidden = true;
+      loginScreen.hidden = false;
+      document.getElementById("loginName").focus();
+    }
+
+    function loadClients() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveClients() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    }
+
+    function emptyToNull(value) {
+      return value === "" || value === undefined ? null : value;
+    }
+
+    function toDbProcedure(client) {
+      return {
+        id: client.id,
+        user_id: currentUser?.id || null,
+        procedure_date: emptyToNull(client.procedureDate),
+        wafer_number: emptyToNull(client.waferNumber),
+        vehicle_brand: emptyToNull(client.vehicleBrand),
+        vehicle_model: emptyToNull(client.vehicleModel),
+        vehicle_year: emptyToNull(client.vehicleYear),
+        vehicle_domain: emptyToNull(client.vehicleDomain),
+        injection: emptyToNull(client.injection),
+        vehicle_type: emptyToNull(client.vehicleType),
+        owner_name: client.ownerName || client.fullName || "Sin nombre",
+        owner_street: emptyToNull(client.ownerStreet),
+        owner_street_number: emptyToNull(client.ownerStreetNumber),
+        postal_code: emptyToNull(client.postalCode),
+        city: emptyToNull(client.city),
+        province: emptyToNull(client.province),
+        phone: emptyToNull(client.phone),
+        document_type: emptyToNull(client.documentType),
+        document_number: emptyToNull(client.documentNumber),
+        regulator_actual_code: emptyToNull(client.regulatorActualCode),
+        regulator_actual_serial: emptyToNull(client.regulatorActualSerial),
+        regulator_install_code: emptyToNull(client.regulatorInstallCode),
+        regulator_install_serial: emptyToNull(client.regulatorInstallSerial),
+        regulator_remove_code: emptyToNull(client.regulatorRemoveCode),
+        regulator_remove_serial: emptyToNull(client.regulatorRemoveSerial),
+        regulator_cancel_code: emptyToNull(client.regulatorCancelCode),
+        regulator_cancel_serial: emptyToNull(client.regulatorCancelSerial),
+        cylinder_code: emptyToNull(client.cylinderCode),
+        cylinder_serial: emptyToNull(client.cylinderSerial),
+        cylinder_new: emptyToNull(client.cylinderNew),
+        cylinder_manufacture_date: emptyToNull(client.cylinderManufactureDate),
+        cylinder_review_date: emptyToNull(client.cylinderReviewDate),
+        cylinder_crpc: emptyToNull(client.cylinderCrpc),
+        cylinder_operation: emptyToNull(client.cylinderOperation),
+        valve_code: emptyToNull(client.valveCode),
+        valve_serial: emptyToNull(client.valveSerial),
+        valve_operation: emptyToNull(client.valveOperation),
+        wafer_due: emptyToNull(client.waferDue),
+        hydraulic_due: emptyToNull(client.hydraulicDue),
+        notes: emptyToNull(client.notes),
+        updated_at: new Date().toISOString()
+      };
+    }
+
+    function fromDbProcedure(row) {
+      return {
+        id: row.id,
+        procedureDate: row.procedure_date,
+        waferNumber: row.wafer_number || "",
+        vehicleBrand: row.vehicle_brand || "",
+        vehicleModel: row.vehicle_model || "",
+        vehicleYear: row.vehicle_year || "",
+        vehicleDomain: row.vehicle_domain || "",
+        injection: row.injection || "",
+        vehicleType: row.vehicle_type || "",
+        ownerName: row.owner_name || "",
+        ownerStreet: row.owner_street || "",
+        ownerStreetNumber: row.owner_street_number || "",
+        postalCode: row.postal_code || "",
+        city: row.city || "",
+        province: row.province || "",
+        phone: row.phone || "",
+        documentType: row.document_type || "",
+        documentNumber: row.document_number || "",
+        regulatorActualCode: row.regulator_actual_code || "",
+        regulatorActualSerial: row.regulator_actual_serial || "",
+        regulatorInstallCode: row.regulator_install_code || "",
+        regulatorInstallSerial: row.regulator_install_serial || "",
+        regulatorRemoveCode: row.regulator_remove_code || "",
+        regulatorRemoveSerial: row.regulator_remove_serial || "",
+        regulatorCancelCode: row.regulator_cancel_code || "",
+        regulatorCancelSerial: row.regulator_cancel_serial || "",
+        cylinderCode: row.cylinder_code || "",
+        cylinderSerial: row.cylinder_serial || "",
+        cylinderNew: row.cylinder_new || "",
+        cylinderManufactureDate: row.cylinder_manufacture_date || "",
+        cylinderReviewDate: row.cylinder_review_date || "",
+        cylinderCrpc: row.cylinder_crpc || "",
+        cylinderOperation: row.cylinder_operation || "",
+        valveCode: row.valve_code || "",
+        valveSerial: row.valve_serial || "",
+        valveOperation: row.valve_operation || "",
+        waferDue: row.wafer_due || "",
+        hydraulicDue: row.hydraulic_due || "",
+        notes: row.notes || "",
+        attachments: [],
+        fullName: row.owner_name || "",
+        documentId: [row.document_type, row.document_number].filter(Boolean).join(" "),
+        address: ownerAddress({
+          ownerStreet: row.owner_street,
+          ownerStreetNumber: row.owner_street_number,
+          postalCode: row.postal_code,
+          city: row.city,
+          province: row.province
+        }),
+        plate: row.vehicle_domain || "",
+        vehicle: [row.vehicle_brand, row.vehicle_model, row.vehicle_year].filter(Boolean).join(" "),
+        updatedAt: row.updated_at
+      };
+    }
+
+    async function loadCloudClients() {
+      if (!supabaseClient || !currentUser) return;
+      const { data, error } = await supabaseClient
+        .from("procedures")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        storageNote.textContent = "Error al cargar nube";
+        console.error(error);
+        return;
+      }
+
+      clients = (data || []).map(fromDbProcedure);
+      saveClients();
+      storageNote.textContent = "Guardado online";
+      renderTable();
+    }
+
+    async function saveCloudClient(client) {
+      if (!supabaseClient || !currentUser) return;
+      const { error } = await supabaseClient
+        .from("procedures")
+        .upsert(toDbProcedure(client));
+      if (error) throw error;
+    }
+
+    async function deleteCloudClient(id) {
+      if (!supabaseClient || !currentUser) return;
+      const { error } = await supabaseClient
+        .from("procedures")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+      if (error) throw error;
+    }
+
+    function todayIso() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function formatShortDate(value) {
+      const date = value ? new Date(value + "T00:00:00") : new Date();
+      return date.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+    }
+
+    function setTodayOnNewRecord() {
+      document.getElementById("procedureDate").value = formatShortDate(todayIso());
+      document.getElementById("procedureDate").dataset.iso = todayIso();
+    }
+
+    function vehicleSummary(client) {
+      const parts = [
+        client.vehicleBrand,
+        client.vehicleModel,
+        client.vehicleYear
+      ].filter(Boolean);
+      return parts.join(" ") || client.vehicle || "-";
+    }
+
+    function ownerAddress(client) {
+      const parts = [
+        [client.ownerStreet, client.ownerStreetNumber].filter(Boolean).join(" "),
+        client.postalCode ? `CP ${client.postalCode}` : "",
+        client.city,
+        client.province
+      ].filter(Boolean);
+      return parts.join(", ") || client.address || "-";
+    }
+
+    function readForm() {
+      const ownerName = document.getElementById("ownerName").value.trim();
+      const documentType = document.getElementById("documentType").value;
+      const documentNumber = document.getElementById("documentNumber").value.trim();
+      const vehicleBrand = document.getElementById("vehicleBrand").value.trim();
+      const vehicleModel = document.getElementById("vehicleModel").value.trim();
+      const vehicleYear = document.getElementById("vehicleYear").value.trim();
+      const vehicleDomain = document.getElementById("vehicleDomain").value.trim().toUpperCase();
+
+      return {
+        id: document.getElementById("clientId").value || crypto.randomUUID(),
+        procedureDate: document.getElementById("procedureDate").dataset.iso || todayIso(),
+        waferNumber: document.getElementById("waferNumber").value.trim(),
+        vehicleBrand,
+        vehicleModel,
+        vehicleYear,
+        vehicleDomain,
+        injection: document.getElementById("injection").value,
+        vehicleType: document.getElementById("vehicleType").value,
+        ownerName,
+        ownerStreet: document.getElementById("ownerStreet").value.trim(),
+        ownerStreetNumber: document.getElementById("ownerStreetNumber").value.trim(),
+        postalCode: document.getElementById("postalCode").value.trim(),
+        city: document.getElementById("city").value.trim(),
+        province: document.getElementById("province").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        documentType,
+        documentNumber,
+        regulatorActualCode: document.getElementById("regulatorActualCode").value.trim(),
+        regulatorActualSerial: document.getElementById("regulatorActualSerial").value.trim(),
+        regulatorInstallCode: document.getElementById("regulatorInstallCode").value.trim(),
+        regulatorInstallSerial: document.getElementById("regulatorInstallSerial").value.trim(),
+        regulatorRemoveCode: document.getElementById("regulatorRemoveCode").value.trim(),
+        regulatorRemoveSerial: document.getElementById("regulatorRemoveSerial").value.trim(),
+        regulatorCancelCode: document.getElementById("regulatorCancelCode").value.trim(),
+        regulatorCancelSerial: document.getElementById("regulatorCancelSerial").value.trim(),
+        cylinderCode: document.getElementById("cylinderCode").value.trim(),
+        cylinderSerial: document.getElementById("cylinderSerial").value.trim(),
+        cylinderNew: document.getElementById("cylinderNew").value,
+        cylinderManufactureDate: document.getElementById("cylinderManufactureDate").value.trim(),
+        cylinderReviewDate: document.getElementById("cylinderReviewDate").value.trim(),
+        cylinderCrpc: document.getElementById("cylinderCrpc").value.trim(),
+        cylinderOperation: document.getElementById("cylinderOperation").value,
+        valveCode: document.getElementById("valveCode").value.trim(),
+        valveSerial: document.getElementById("valveSerial").value.trim(),
+        valveOperation: document.getElementById("valveOperation").value,
+        waferDue: document.getElementById("waferDue").value,
+        hydraulicDue: document.getElementById("hydraulicDue").value,
+        notes: document.getElementById("notes").value.trim(),
+        attachments: pendingAttachments,
+        fullName: ownerName,
+        documentId: [documentType, documentNumber].filter(Boolean).join(" "),
+        address: ownerAddress({
+          ownerStreet: document.getElementById("ownerStreet").value.trim(),
+          ownerStreetNumber: document.getElementById("ownerStreetNumber").value.trim(),
+          postalCode: document.getElementById("postalCode").value.trim(),
+          city: document.getElementById("city").value.trim(),
+          province: document.getElementById("province").value.trim()
+        }),
+        plate: vehicleDomain,
+        vehicle: [vehicleBrand, vehicleModel, vehicleYear].filter(Boolean).join(" "),
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function fillForm(client) {
+      document.getElementById("clientId").value = client.id;
+      const procedureDate = client.procedureDate || todayIso();
+      document.getElementById("procedureDate").value = formatShortDate(procedureDate);
+      document.getElementById("procedureDate").dataset.iso = procedureDate;
+      document.getElementById("waferNumber").value = client.waferNumber || "";
+      document.getElementById("vehicleBrand").value = client.vehicleBrand || "";
+      document.getElementById("vehicleModel").value = client.vehicleModel || "";
+      document.getElementById("vehicleYear").value = client.vehicleYear || "";
+      document.getElementById("vehicleDomain").value = client.vehicleDomain || client.plate || "";
+      document.getElementById("injection").value = client.injection || "";
+      document.getElementById("vehicleType").value = client.vehicleType || "";
+      document.getElementById("ownerName").value = client.ownerName || client.fullName || "";
+      document.getElementById("ownerStreet").value = client.ownerStreet || "";
+      document.getElementById("ownerStreetNumber").value = client.ownerStreetNumber || "";
+      document.getElementById("postalCode").value = client.postalCode || "";
+      document.getElementById("city").value = client.city || "";
+      document.getElementById("province").value = client.province || "";
+      document.getElementById("phone").value = client.phone || "";
+      document.getElementById("documentType").value = client.documentType || "";
+      document.getElementById("documentNumber").value = client.documentNumber || "";
+      document.getElementById("regulatorActualCode").value = client.regulatorActualCode || "";
+      document.getElementById("regulatorActualSerial").value = client.regulatorActualSerial || "";
+      document.getElementById("regulatorInstallCode").value = client.regulatorInstallCode || "";
+      document.getElementById("regulatorInstallSerial").value = client.regulatorInstallSerial || "";
+      document.getElementById("regulatorRemoveCode").value = client.regulatorRemoveCode || "";
+      document.getElementById("regulatorRemoveSerial").value = client.regulatorRemoveSerial || "";
+      document.getElementById("regulatorCancelCode").value = client.regulatorCancelCode || "";
+      document.getElementById("regulatorCancelSerial").value = client.regulatorCancelSerial || "";
+      document.getElementById("cylinderCode").value = client.cylinderCode || "";
+      document.getElementById("cylinderSerial").value = client.cylinderSerial || "";
+      document.getElementById("cylinderNew").value = client.cylinderNew || "";
+      document.getElementById("cylinderManufactureDate").value = client.cylinderManufactureDate || "";
+      document.getElementById("cylinderReviewDate").value = client.cylinderReviewDate || "";
+      document.getElementById("cylinderCrpc").value = client.cylinderCrpc || "";
+      document.getElementById("cylinderOperation").value = client.cylinderOperation || "";
+      document.getElementById("valveCode").value = client.valveCode || "";
+      document.getElementById("valveSerial").value = client.valveSerial || "";
+      document.getElementById("valveOperation").value = client.valveOperation || "";
+      document.getElementById("waferDue").value = client.waferDue || "";
+      document.getElementById("hydraulicDue").value = client.hydraulicDue || "";
+      document.getElementById("notes").value = client.notes || "";
+      pendingAttachments = client.attachments || [];
+      formTitle.textContent = "Editar registro";
+      renderAttachments();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function clearForm() {
+      form.reset();
+      document.getElementById("clientId").value = "";
+      pendingAttachments = [];
+      attachmentInput.value = "";
+      formTitle.textContent = "Nuevo registro";
+      setTodayOnNewRecord();
+      renderAttachments();
+    }
+
+    function dateStatus(client) {
+      const dates = [client.waferDue, client.hydraulicDue].filter(Boolean).map(value => new Date(value + "T00:00:00"));
+      if (!dates.length) return { key: "vigente", label: "Sin vencimiento", days: null };
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const nextDue = dates.sort((a, b) => a - b)[0];
+      const diffDays = Math.ceil((nextDue - today) / 86400000);
+
+      if (diffDays < 0) return { key: "vencido", label: `Vencido hace ${Math.abs(diffDays)} días`, days: diffDays };
+      if (diffDays <= WARNING_DAYS) return { key: "proximo", label: `Vence en ${diffDays} días`, days: diffDays };
+      return { key: "vigente", label: "Vigente", days: diffDays };
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      const [year, month, day] = value.split("-");
+      return `${day}/${month}/${year}`;
+    }
+
+    function normalizeImportText(text) {
+      return text
+        .replace(/\r/g, "\n")
+        .replace(/[ \t]+/g, " ")
+        .replace(/\n{2,}/g, "\n")
+        .trim();
+    }
+
+    function findImportedValue(text, labels) {
+      const lines = normalizeImportText(text).split("\n").map(line => line.trim()).filter(Boolean);
+      for (const label of labels) {
+        const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const sameLine = new RegExp(`${escaped}\\s*[:\\-]?\\s*(.+)$`, "i");
+        for (let index = 0; index < lines.length; index += 1) {
+          const match = lines[index].match(sameLine);
+          if (match && match[1] && !labels.some(item => item.toLowerCase() === match[1].trim().toLowerCase())) {
+            return match[1].trim();
+          }
+          if (lines[index].toLowerCase() === label.toLowerCase() && lines[index + 1]) {
+            return lines[index + 1].trim();
+          }
+        }
+      }
+      return "";
+    }
+
+    function setFieldIfFound(id, value) {
+      const field = document.getElementById(id);
+      if (!field || !value) return 0;
+      field.value = value.trim();
+      return 1;
+    }
+
+    function importEnargasText() {
+      const text = document.getElementById("enargasText").value;
+      const status = document.getElementById("importStatus");
+      if (!text.trim()) {
+        status.textContent = "Pegá primero el resultado de ENARGAS.";
+        return;
+      }
+
+      let imported = 0;
+      imported += setFieldIfFound("vehicleDomain", findImportedValue(text, ["Dominio", "Patente"]));
+      imported += setFieldIfFound("waferNumber", findImportedValue(text, ["Oblea", "Número de oblea", "Nro. oblea", "N° oblea"]));
+      imported += setFieldIfFound("vehicleBrand", findImportedValue(text, ["Marca"]));
+      imported += setFieldIfFound("vehicleModel", findImportedValue(text, ["Modelo"]));
+      imported += setFieldIfFound("vehicleYear", findImportedValue(text, ["Año", "Anio"]));
+      imported += setFieldIfFound("regulatorActualCode", findImportedValue(text, ["Código regulador", "Regulador código", "Regulador actual código"]));
+      imported += setFieldIfFound("regulatorActualSerial", findImportedValue(text, ["Serie regulador", "Número de serie regulador", "Regulador actual número de serie"]));
+      imported += setFieldIfFound("cylinderCode", findImportedValue(text, ["Código cilindro", "Cilindro código"]));
+      imported += setFieldIfFound("cylinderSerial", findImportedValue(text, ["Serie cilindro", "Número de serie cilindro", "Cilindro número de serie"]));
+      imported += setFieldIfFound("cylinderManufactureDate", findImportedValue(text, ["Fecha fabricación", "Fecha de fabricación"]));
+      imported += setFieldIfFound("cylinderReviewDate", findImportedValue(text, ["Fecha revisado", "Fecha de revisado", "Revisión", "Revision"]));
+      imported += setFieldIfFound("cylinderCrpc", findImportedValue(text, ["CRPC"]));
+      imported += setFieldIfFound("valveCode", findImportedValue(text, ["Código válvula", "Código valvula", "Válvula código", "Valvula código"]));
+      imported += setFieldIfFound("valveSerial", findImportedValue(text, ["Serie válvula", "Serie valvula", "Número de serie válvula", "Número de serie valvula"]));
+
+      status.textContent = imported
+        ? `Se completaron ${imported} campo/s detectados. Revisá antes de guardar.`
+        : "No pude reconocer campos. Probá copiar más contenido del resultado.";
+    }
+
+    function searchable(client) {
+      return [
+        client.ownerName,
+        client.fullName,
+        client.documentType,
+        client.documentNumber,
+        client.documentId,
+        client.phone,
+        client.vehicleDomain,
+        client.plate,
+        client.vehicleBrand,
+        client.vehicleModel,
+        client.vehicleYear,
+        client.vehicleType,
+        client.waferNumber,
+        client.regulatorActualCode,
+        client.regulatorActualSerial,
+        client.regulatorInstallCode,
+        client.regulatorInstallSerial,
+        client.regulatorRemoveCode,
+        client.regulatorRemoveSerial,
+        client.regulatorCancelCode,
+        client.regulatorCancelSerial,
+        client.cylinderCode,
+        client.cylinderSerial,
+        client.cylinderCrpc,
+        client.cylinderOperation,
+        client.valveCode,
+        client.valveSerial,
+        client.valveOperation,
+        client.city,
+        client.province
+      ].join(" ").toLowerCase();
+    }
+
+    function filteredClients() {
+      const q = search.value.trim().toLowerCase();
+      const filter = statusFilter.value;
+      return clients
+        .filter(client => !q || searchable(client).includes(q))
+        .filter(client => filter === "all" || dateStatus(client).key === filter)
+        .sort((a, b) => {
+          const statusA = dateStatus(a).days ?? 99999;
+          const statusB = dateStatus(b).days ?? 99999;
+          return statusA - statusB;
+        });
+    }
+
+    function renderStats() {
+      const statuses = clients.map(dateStatus);
+      document.getElementById("countTotal").textContent = clients.length;
+      document.getElementById("countWarning").textContent = statuses.filter(s => s.key === "proximo").length;
+      document.getElementById("countExpired").textContent = statuses.filter(s => s.key === "vencido").length;
+    }
+
+    function renderTable() {
+      renderStats();
+      const visible = filteredClients();
+      if (!visible.length) {
+        tableWrap.innerHTML = `<div class="empty">No hay registros para mostrar.</div>`;
+        return;
+      }
+
+      tableWrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Vehículo</th>
+              <th>Oblea</th>
+              <th>Vencimientos</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${visible.map(client => {
+              const status = dateStatus(client);
+              return `
+                <tr>
+                  <td data-label="Cliente">
+                    <strong>${escapeHtml(client.ownerName || client.fullName)}</strong><br>
+                    <span class="muted">${escapeHtml(client.documentId || "-")} · ${escapeHtml(client.phone || "-")}</span>
+                  </td>
+                  <td data-label="Vehículo">
+                    <strong>${escapeHtml(client.vehicleDomain || client.plate || "-")}</strong><br>
+                    <span class="muted">${escapeHtml(vehicleSummary(client))}</span>
+                  </td>
+                  <td data-label="Oblea">
+                    ${escapeHtml(client.waferNumber || "-")}<br>
+                    <span class="muted">${escapeHtml(client.vehicleType || "")}</span>
+                  </td>
+                  <td data-label="Vencimientos">
+                    Oblea: ${formatDate(client.waferDue)}<br>
+                    Hidráulica: ${formatDate(client.hydraulicDue)}
+                  </td>
+                  <td data-label="Estado"><span class="badge ${status.key}">${status.label}</span></td>
+                  <td data-label="Acciones">
+                    <div class="row-actions">
+                      <button type="button" onclick="editClient('${client.id}')">Editar</button>
+                      <button class="ghost" type="button" onclick="printClient('${client.id}')">Imprimir</button>
+                      <button class="danger" type="button" onclick="deleteClient('${client.id}')">Borrar</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderAttachments() {
+      if (!pendingAttachments.length) {
+        attachmentPreview.innerHTML = "";
+        return;
+      }
+
+      attachmentPreview.innerHTML = pendingAttachments.map(file => {
+        if (file.type.startsWith("image/")) {
+          return `<a class="thumb" href="${file.data}" target="_blank" title="${escapeHtml(file.name)}"><img src="${file.data}" alt="${escapeHtml(file.name)}"></a>`;
+        }
+        const extension = file.name.split(".").pop().toUpperCase();
+        return `<a class="thumb" href="${file.data}" target="_blank">${extension}<br>${escapeHtml(file.name)}</a>`;
+      }).join("");
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function filesToData(files) {
+      const readers = Array.from(files).map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, type: file.type || "application/octet-stream", data: reader.result });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      }));
+      return Promise.all(readers);
+    }
+
+    loginForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const email = document.getElementById("loginName").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      if (supabaseClient) {
+        let result = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (result.error) {
+          result = await supabaseClient.auth.signUp({ email, password });
+        }
+        if (result.error) {
+          alert(result.error.message);
+          return;
+        }
+        if (!result.data.session && result.data.user) {
+          alert("Cuenta creada. Si Supabase pide confirmar email, revisá tu correo y después volvé a ingresar.");
+          return;
+        }
+        currentUser = result.data.user;
+      }
+
+      const session = {
+        name: email,
+        plan: document.getElementById("loginPlan").value,
+        startedAt: new Date().toISOString()
+      };
+      saveSession(session);
+      await showApp(session);
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      currentUser = null;
+      localStorage.removeItem(SESSION_KEY);
+      showLogin();
+    });
+
+    document.getElementById("enargasBtn").addEventListener("click", async () => {
+      const domainInput = document.getElementById("vehicleDomain");
+      const domain = domainInput.value.trim().toUpperCase();
+      if (!domain) {
+        alert("Primero cargá el dominio del vehículo.");
+        domainInput.focus();
+        return;
+      }
+
+      domainInput.value = domain;
+      try {
+        await navigator.clipboard.writeText(domain);
+      } catch {
+        // Some local-browser contexts do not allow clipboard access.
+      }
+      window.open("https://www.enargas.gob.ar/secciones/gas-natural-comprimido/consulta-dominio.php", "_blank");
+    });
+
+    document.getElementById("importEnargasBtn").addEventListener("click", importEnargasText);
+
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const client = readForm();
+      const existingIndex = clients.findIndex(item => item.id === client.id);
+      if (existingIndex >= 0) clients[existingIndex] = client;
+      else clients.push(client);
+      saveClients();
+      try {
+        await saveCloudClient(client);
+        storageNote.textContent = currentUser ? "Guardado online" : "Guardado local";
+      } catch (error) {
+        console.error(error);
+        storageNote.textContent = "Error al guardar online";
+        alert("No se pudo guardar online. Quedó una copia local en este navegador.");
+      }
+      clearForm();
+      renderTable();
+    });
+
+    attachmentInput.addEventListener("change", async event => {
+      const files = await filesToData(event.target.files);
+      pendingAttachments = pendingAttachments.concat(files);
+      renderAttachments();
+    });
+
+    search.addEventListener("input", renderTable);
+    statusFilter.addEventListener("change", renderTable);
+    document.getElementById("resetBtn").addEventListener("click", clearForm);
+
+    document.getElementById("seedBtn").addEventListener("click", () => {
+      if (clients.length && !confirm("Esto agrega registros de ejemplo. ¿Continuar?")) return;
+      const today = new Date();
+      const soon = new Date(today);
+      soon.setDate(today.getDate() + 12);
+      const expired = new Date(today);
+      expired.setDate(today.getDate() - 8);
+      clients.push(
+        {
+          id: crypto.randomUUID(),
+          procedureDate: todayIso(),
+          waferNumber: "OB-45892",
+          vehicleBrand: "Chevrolet",
+          vehicleModel: "Classic",
+          vehicleYear: "2015",
+          vehicleDomain: "AB123CD",
+          injection: "Sí",
+          vehicleType: "Particular",
+          ownerName: "Juan Perez",
+          ownerStreet: "Av. Siempre Viva",
+          ownerStreetNumber: "123",
+          postalCode: "1406",
+          city: "CABA",
+          province: "Buenos Aires",
+          phone: "11 5555-5555",
+          documentType: "CUIT",
+          documentNumber: "20-12345678-9",
+          fullName: "Juan Perez",
+          documentId: "CUIT 20-12345678-9",
+          address: "Av. Siempre Viva 123, CP 1406, CABA, Buenos Aires",
+          plate: "AB123CD",
+          vehicle: "Chevrolet Classic 2015",
+          regulatorActualCode: "REG-A01",
+          regulatorActualSerial: "RS-1001",
+          regulatorInstallCode: "REG-M02",
+          regulatorInstallSerial: "RS-2002",
+          regulatorRemoveCode: "",
+          regulatorRemoveSerial: "",
+          regulatorCancelCode: "",
+          regulatorCancelSerial: "",
+          cylinderCode: "CIL-45",
+          cylinderSerial: "CIL-88421",
+          cylinderNew: "No",
+          cylinderManufactureDate: "04/2018",
+          cylinderReviewDate: "04/2023",
+          cylinderCrpc: "CRPC-12",
+          cylinderOperation: "Sin cambios",
+          valveCode: "VAL-10",
+          valveSerial: "VS-7001",
+          valveOperation: "Sin cambios",
+          waferDue: soon.toISOString().slice(0, 10),
+          hydraulicDue: "",
+          notes: "Cliente de ejemplo con oblea próxima a vencer.",
+          attachments: [],
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: crypto.randomUUID(),
+          procedureDate: todayIso(),
+          waferNumber: "OB-77801",
+          vehicleBrand: "Fiat",
+          vehicleModel: "Siena",
+          vehicleYear: "2013",
+          vehicleDomain: "AA987BB",
+          injection: "No",
+          vehicleType: "Taxi",
+          ownerName: "Maria Gomez",
+          ownerStreet: "Belgrano",
+          ownerStreetNumber: "850",
+          postalCode: "1640",
+          city: "Martinez",
+          province: "Buenos Aires",
+          phone: "11 4444-2222",
+          documentType: "CUIT",
+          documentNumber: "27-87654321-4",
+          fullName: "Maria Gomez",
+          documentId: "CUIT 27-87654321-4",
+          address: "Belgrano 850, CP 1640, Martinez, Buenos Aires",
+          plate: "AA987BB",
+          vehicle: "Fiat Siena 2013",
+          regulatorActualCode: "REG-A04",
+          regulatorActualSerial: "RS-4404",
+          regulatorInstallCode: "",
+          regulatorInstallSerial: "",
+          regulatorRemoveCode: "REG-D04",
+          regulatorRemoveSerial: "RS-3304",
+          regulatorCancelCode: "",
+          regulatorCancelSerial: "",
+          cylinderCode: "CIL-77",
+          cylinderSerial: "CIL-12045",
+          cylinderNew: "No",
+          cylinderManufactureDate: "08/2017",
+          cylinderReviewDate: "08/2022",
+          cylinderCrpc: "CRPC-09",
+          cylinderOperation: "Modificación",
+          valveCode: "VAL-22",
+          valveSerial: "VS-9120",
+          valveOperation: "Modificación",
+          waferDue: expired.toISOString().slice(0, 10),
+          hydraulicDue: "",
+          notes: "Cliente de ejemplo vencido.",
+          attachments: [],
+          updatedAt: new Date().toISOString()
+        }
+      );
+      saveClients();
+      renderTable();
+    });
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(clients, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "clientes-gnc-beta.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
+
+    window.editClient = function(id) {
+      const client = clients.find(item => item.id === id);
+      if (client) fillForm(client);
+    };
+
+    window.deleteClient = async function(id) {
+      const client = clients.find(item => item.id === id);
+      if (!client || !confirm(`¿Borrar el registro de ${client.ownerName || client.fullName}?`)) return;
+      clients = clients.filter(item => item.id !== id);
+      saveClients();
+      try {
+        await deleteCloudClient(id);
+      } catch (error) {
+        console.error(error);
+        alert("Se borró localmente, pero no se pudo borrar online.");
+      }
+      renderTable();
+    };
+
+    window.printClient = function(id) {
+      const client = clients.find(item => item.id === id);
+      if (!client) return;
+      const status = dateStatus(client);
+      printArea.innerHTML = `
+        <div class="print-title">
+          <h1>Ficha de cliente GNC</h1>
+          <p>Fecha del trámite: ${formatShortDate(client.procedureDate || todayIso())}</p>
+        </div>
+        <div class="print-grid">
+          <div><span class="print-label">Número de oblea</span>${escapeHtml(client.waferNumber || "-")}</div>
+          <div><span class="print-label">Propietario</span>${escapeHtml(client.ownerName || client.fullName || "-")}</div>
+          <div><span class="print-label">Tipo de documento</span>${escapeHtml(client.documentType || "-")}</div>
+          <div><span class="print-label">Número de documento</span>${escapeHtml(client.documentNumber || client.documentId || "-")}</div>
+          <div><span class="print-label">Teléfono</span>${escapeHtml(client.phone || "-")}</div>
+          <div><span class="print-label">Dirección</span>${escapeHtml(ownerAddress(client))}</div>
+          <div><span class="print-label">Marca</span>${escapeHtml(client.vehicleBrand || "-")}</div>
+          <div><span class="print-label">Modelo</span>${escapeHtml(client.vehicleModel || "-")}</div>
+          <div><span class="print-label">Año</span>${escapeHtml(client.vehicleYear || "-")}</div>
+          <div><span class="print-label">Dominio</span>${escapeHtml(client.vehicleDomain || client.plate || "-")}</div>
+          <div><span class="print-label">Inyección</span>${escapeHtml(client.injection || "-")}</div>
+          <div><span class="print-label">Tipo de vehículo</span>${escapeHtml(client.vehicleType || "-")}</div>
+        </div>
+        <div class="print-section">
+          <h2>Regulador</h2>
+          <div class="print-grid">
+            <div><span class="print-label">Actual - Código</span>${escapeHtml(client.regulatorActualCode || "-")}</div>
+            <div><span class="print-label">Actual - Número de serie</span>${escapeHtml(client.regulatorActualSerial || "-")}</div>
+            <div><span class="print-label">Montaje - Código</span>${escapeHtml(client.regulatorInstallCode || "-")}</div>
+            <div><span class="print-label">Montaje - Número de serie</span>${escapeHtml(client.regulatorInstallSerial || "-")}</div>
+            <div><span class="print-label">Desmontaje - Código</span>${escapeHtml(client.regulatorRemoveCode || "-")}</div>
+            <div><span class="print-label">Desmontaje - Número de serie</span>${escapeHtml(client.regulatorRemoveSerial || "-")}</div>
+            <div><span class="print-label">Baja - Código</span>${escapeHtml(client.regulatorCancelCode || "-")}</div>
+            <div><span class="print-label">Baja - Número de serie</span>${escapeHtml(client.regulatorCancelSerial || "-")}</div>
+          </div>
+        </div>
+        <div class="print-section">
+          <h2>Cilindro</h2>
+          <div class="print-grid">
+            <div><span class="print-label">Código</span>${escapeHtml(client.cylinderCode || "-")}</div>
+            <div><span class="print-label">Número de serie</span>${escapeHtml(client.cylinderSerial || "-")}</div>
+            <div><span class="print-label">Nuevo</span>${escapeHtml(client.cylinderNew || "-")}</div>
+            <div><span class="print-label">Fecha fabricación</span>${escapeHtml(client.cylinderManufactureDate || "-")}</div>
+            <div><span class="print-label">Fecha de revisado</span>${escapeHtml(client.cylinderReviewDate || "-")}</div>
+            <div><span class="print-label">CRPC</span>${escapeHtml(client.cylinderCrpc || "-")}</div>
+            <div><span class="print-label">Tipo de operación</span>${escapeHtml(client.cylinderOperation || "-")}</div>
+          </div>
+        </div>
+        <div class="print-section">
+          <h2>Válvula de cilindro</h2>
+          <div class="print-grid">
+            <div><span class="print-label">Código</span>${escapeHtml(client.valveCode || "-")}</div>
+            <div><span class="print-label">Número de serie</span>${escapeHtml(client.valveSerial || "-")}</div>
+            <div><span class="print-label">Tipo de operación</span>${escapeHtml(client.valveOperation || "-")}</div>
+          </div>
+        </div>
+        <div class="print-section">
+          <h2>Vencimientos</h2>
+          <div class="print-grid">
+          <div><span class="print-label">Vence oblea</span>${formatDate(client.waferDue)}</div>
+          <div><span class="print-label">Vence hidráulica</span>${formatDate(client.hydraulicDue)}</div>
+          <div><span class="print-label">Estado</span>${status.label}</div>
+          <div><span class="print-label">Adjuntos</span>${client.attachments.length} archivo/s</div>
+          </div>
+        </div>
+        <div class="print-notes">
+          <span class="print-label">Observaciones</span>
+          ${escapeHtml(client.notes || "-")}
+        </div>
+      `;
+      window.print();
+    };
+
+    async function bootApp() {
+      setTodayOnNewRecord();
+      if (supabaseClient) {
+        const { data } = await supabaseClient.auth.getSession();
+        currentUser = data.session?.user || null;
+      }
+      const activeSession = loadSession();
+      if (activeSession && (!supabaseClient || currentUser)) await showApp(activeSession);
+      else showLogin();
+    }
+
+    bootApp();
+  </script>
+</body>
+</html>
