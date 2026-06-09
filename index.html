@@ -483,7 +483,10 @@
             <option value="Equipo / varios usuarios">Equipo / varios usuarios</option>
           </select>
         </div>
-        <button type="submit">Ingresar / crear cuenta</button>
+        <div class="actions">
+          <button type="submit">Ingresar</button>
+          <button class="ghost" id="signupBtn" type="button">Crear cuenta</button>
+        </div>
         <p class="muted">Con Supabase configurado, esta cuenta se valida online.</p>
       </div>
     </form>
@@ -1419,27 +1422,8 @@
       return Promise.all(readers);
     }
 
-    loginForm.addEventListener("submit", async event => {
-      event.preventDefault();
-      const email = document.getElementById("loginName").value.trim();
-      const password = document.getElementById("loginPassword").value;
-
-      if (supabaseClient) {
-        let result = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (result.error) {
-          result = await supabaseClient.auth.signUp({ email, password });
-        }
-        if (result.error) {
-          alert(result.error.message);
-          return;
-        }
-        if (!result.data.session && result.data.user) {
-          alert("Cuenta creada. Si Supabase pide confirmar email, revisá tu correo y después volvé a ingresar.");
-          return;
-        }
-        currentUser = result.data.user;
-      }
-
+    async function startSession(user, email) {
+      currentUser = user;
       const session = {
         name: email,
         plan: document.getElementById("loginPlan").value,
@@ -1447,6 +1431,47 @@
       };
       saveSession(session);
       await showApp(session);
+    }
+
+    loginForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const email = document.getElementById("loginName").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      if (supabaseClient) {
+        const result = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (result.error) {
+          alert(result.error.message);
+          return;
+        }
+        await startSession(result.data.user, email);
+        return;
+      }
+
+      await startSession(null, email);
+    });
+
+    document.getElementById("signupBtn").addEventListener("click", async () => {
+      const email = document.getElementById("loginName").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      if (!email || password.length < 6) {
+        alert("Ingresá un email y una contraseña de mínimo 6 caracteres.");
+        return;
+      }
+      if (!supabaseClient) {
+        await startSession(null, email);
+        return;
+      }
+      const result = await supabaseClient.auth.signUp({ email, password });
+      if (result.error) {
+        alert(result.error.message);
+        return;
+      }
+      if (!result.data.session && result.data.user) {
+        alert("Cuenta creada. Si Supabase pide confirmar email, revisá tu correo y después ingresá.");
+        return;
+      }
+      await startSession(result.data.user, email);
     });
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {
