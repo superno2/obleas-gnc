@@ -120,9 +120,7 @@
       max-width: 1280px;
       margin: 0 auto;
       padding: 22px;
-      display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 18px;
+      display: block;
     }
 
     section, aside {
@@ -130,6 +128,39 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       box-shadow: 0 8px 18px rgba(15, 37, 48, 0.06);
+    }
+
+    .tabs {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px 22px 0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab-button {
+      background: #eef3f6;
+      color: #1d3946;
+      border: 1px solid #c9d7df;
+    }
+
+    .tab-button:hover {
+      background: #dfe9ee;
+    }
+
+    .tab-button.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
     }
 
     .panel-head {
@@ -388,7 +419,6 @@
     .print-area { display: none; }
 
     @media (max-width: 980px) {
-      main { grid-template-columns: 1fr; }
       .top-tools { grid-template-columns: 1fr; }
     }
 
@@ -505,8 +535,13 @@
       </div>
     </header>
 
+    <nav class="tabs" aria-label="Vistas principales">
+      <button class="tab-button active" id="recordTabBtn" type="button" data-tab-target="recordPanel">Nuevo registro</button>
+      <button class="tab-button" id="clientsTabBtn" type="button" data-tab-target="clientsPanel">Clientes y vencimientos</button>
+    </nav>
+
     <main>
-    <aside>
+    <aside class="tab-panel active" id="recordPanel">
       <div class="panel-head">
         <h2 id="formTitle">Nuevo registro</h2>
       </div>
@@ -551,11 +586,11 @@
                   <span class="hint">Abre la consulta oficial y copia el dominio para pegarlo allí.</span>
                 </div>
                 <div class="import-box">
-                  <label for="enargasText">Pegar resultado de ENARGAS</label>
-                  <textarea id="enargasText" placeholder="Pegá acá el texto del resultado de la consulta por dominio"></textarea>
+                  <label for="enargasText">Pegar detalle de operación de ENARGAS</label>
+                  <textarea id="enargasText" placeholder="Pegá acá el contenido de la pantalla detalle-operacion.php"></textarea>
                   <div class="inline-tools">
                     <button class="ghost" id="importEnargasBtn" type="button">Importar datos</button>
-                    <span class="hint" id="importStatus">Completa los campos que pueda reconocer.</span>
+                    <span class="hint" id="importStatus">Completa los campos que pueda reconocer del detalle oficial.</span>
                   </div>
                 </div>
               </div>
@@ -794,10 +829,13 @@
       </div>
     </aside>
 
-    <section>
+    <section class="tab-panel" id="clientsPanel">
       <div class="panel-head">
         <h2>Clientes y vencimientos</h2>
-        <span class="muted" id="storageNote">Guardado local</span>
+        <div class="inline-tools">
+          <button class="ghost" id="newRecordBtn" type="button">Nuevo registro</button>
+          <span class="muted" id="storageNote">Guardado local</span>
+        </div>
       </div>
       <div class="content">
         <div class="stats">
@@ -845,6 +883,8 @@
     const printArea = document.getElementById("printArea");
     const formTitle = document.getElementById("formTitle");
     const storageNote = document.getElementById("storageNote");
+    const tabButtons = Array.from(document.querySelectorAll("[data-tab-target]"));
+    const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
     let clients = loadClients();
     let pendingAttachments = [];
@@ -879,6 +919,16 @@
       appShell.hidden = true;
       loginScreen.hidden = false;
       document.getElementById("loginName").focus();
+    }
+
+    function showTab(panelId) {
+      tabButtons.forEach(button => {
+        button.classList.toggle("active", button.dataset.tabTarget === panelId);
+      });
+      tabPanels.forEach(panel => {
+        panel.classList.toggle("active", panel.id === panelId);
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function loadClients() {
@@ -1217,15 +1267,59 @@
     function normalizeImportText(text) {
       return text
         .replace(/\r/g, "\n")
+        .replace(/\u00a0/g, " ")
+        .replace(/[|;]/g, "\n")
+        .replace(/([a-záéíóúñ])([A-ZÁÉÍÓÚÑ][a-záéíóúñ])/g, "$1\n$2")
         .replace(/[ \t]+/g, " ")
         .replace(/\n{2,}/g, "\n")
         .trim();
     }
 
+    function normalizeKey(value) {
+      return value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    }
+
+    function escapeRegExp(value) {
+      return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function normalizeImportedDate(value) {
+      const trimmed = value.trim();
+      const match = trimmed.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})\b/);
+      if (!match) return trimmed;
+      const day = match[1].padStart(2, "0");
+      const month = match[2].padStart(2, "0");
+      const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+      return `${year}-${month}-${day}`;
+    }
+
+    function normalizeImportedMonth(value) {
+      const trimmed = value.trim();
+      const match = trimmed.match(/\b(\d{1,2})[\/.-](\d{2,4})\b/);
+      if (!match) return trimmed;
+      const month = match[1].padStart(2, "0");
+      const year = match[2].length === 2 ? `20${match[2]}` : match[2];
+      return `${month}/${year}`;
+    }
+
+    function findImportedPattern(text, patterns) {
+      const normalized = normalizeImportText(text);
+      for (const pattern of patterns) {
+        const match = normalized.match(pattern);
+        if (match && match[1]) return match[1].trim();
+      }
+      return "";
+    }
+
     function findImportedValue(text, labels) {
       const lines = normalizeImportText(text).split("\n").map(line => line.trim()).filter(Boolean);
       for (const label of labels) {
-        const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const escaped = escapeRegExp(label);
         const sameLine = new RegExp(`${escaped}\\s*[:\\-]?\\s*(.+)$`, "i");
         for (let index = 0; index < lines.length; index += 1) {
           const match = lines[index].match(sameLine);
@@ -1240,10 +1334,197 @@
       return "";
     }
 
+    function findImportedTableValue(text, labels) {
+      const lines = normalizeImportText(text).split("\n").map(line => line.trim()).filter(Boolean);
+      const normalizedLabels = labels.map(normalizeKey);
+      for (let index = 0; index < lines.length - 1; index += 1) {
+        if (normalizedLabels.includes(normalizeKey(lines[index]))) {
+          return lines[index + 1].trim();
+        }
+      }
+      return "";
+    }
+
+    function findImportedAny(text, labels, patterns = []) {
+      return findImportedValue(text, labels)
+        || findImportedTableValue(text, labels)
+        || findImportedPattern(text, patterns);
+    }
+
+    function findImportedSection(text, sectionNames) {
+      const lines = normalizeImportText(text).split("\n");
+      const sectionKeys = sectionNames.map(normalizeKey);
+      const start = lines.findIndex(line => sectionKeys.some(key => normalizeKey(line).includes(key)));
+      if (start < 0) return "";
+      const next = lines.findIndex((line, index) => {
+        if (index <= start) return false;
+        const key = normalizeKey(line);
+        return [
+          "vehiculo",
+          "titular",
+          "propietario",
+          "regulador",
+          "cilindro",
+          "valvula",
+          "valvula de cilindro",
+          "oblea",
+          "datos de la operacion",
+          "componentes"
+        ].some(section => key === section || key.startsWith(`${section} `));
+      });
+      return lines.slice(start, next > start ? next : lines.length).join("\n");
+    }
+
+    function getTableCells(sectionText) {
+      return normalizeImportText(sectionText)
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean)
+        .filter(line => {
+          const key = normalizeKey(line);
+          return ![
+            "datos regulador",
+            "datos cilindro",
+            "dato valvula del cilindro",
+            "datos valvula del cilindro",
+            "codigo homologacion",
+            "numero de serie",
+            "operacion",
+            "fecha fab",
+            "crpc",
+            "fecha crpc",
+            "resultado",
+            "nro certificado"
+          ].includes(key);
+        })
+        .filter(line => !normalizeKey(line).includes("codigo homologacion numero de serie"));
+    }
+
+    function compactImportText(text) {
+      return normalizeImportText(text).replace(/\n/g, " ").replace(/\s+/g, " ").trim();
+    }
+
+    function parseRegulatorTable(sectionText) {
+      const compact = compactImportText(sectionText);
+      const compactMatch = compact.match(/C[oó]digo Homologaci[oó]n\s+N[uú]mero de Serie\s+Operaci[oó]n\s+(\S+)\s+(\S+)\s+(.+?)(?=\s+Datos|\s+C[oó]digo Homologaci[oó]n|$)/i);
+      if (compactMatch) {
+        return {
+          code: compactMatch[1],
+          serial: compactMatch[2],
+          operation: compactMatch[3]
+        };
+      }
+
+      const lines = normalizeImportText(sectionText).split("\n").map(line => line.trim()).filter(Boolean);
+      const row = lines.find(line => /^[A-Z0-9]{2,}\s+[A-Z0-9-]{3,}\s+/.test(line) && !normalizeKey(line).includes("codigo homologacion"));
+      const match = row?.match(/^(\S+)\s+(\S+)\s+(.+)$/);
+      if (!match) {
+        const cells = getTableCells(sectionText);
+        if (cells.length < 3) return {};
+        return {
+          code: cells[0],
+          serial: cells[1],
+          operation: cells[2]
+        };
+      }
+      return {
+        code: match[1],
+        serial: match[2],
+        operation: match[3]
+      };
+    }
+
+    function parseValveTable(sectionText) {
+      return parseRegulatorTable(sectionText);
+    }
+
+    function parseCylinderTable(sectionText) {
+      const compact = compactImportText(sectionText);
+      const compactMatch = compact.match(/C[oó]digo Homologaci[oó]n\s+N[uú]mero de Serie\s+Operaci[oó]n\s+Fecha Fab\.?\s+CRPC\s+Fecha CRPC\s+Resultado\s+Nro\.? Certificado\s+(\S+)\s+(\S+)\s+(.+?)\s+(\d{1,2}\s*[\/.-]\s*\d{2,4})\s+(\S+)\s+(\d{1,2}\s*[\/.-]\s*\d{2,4})(?:\s+(\S+))?(?:\s+(\S+))?/i);
+      if (compactMatch) {
+        return {
+          code: compactMatch[1],
+          serial: compactMatch[2],
+          operation: compactMatch[3],
+          manufactureDate: compactMatch[4],
+          crpc: compactMatch[5],
+          reviewDate: compactMatch[6],
+          result: compactMatch[7] || "",
+          certificate: compactMatch[8] || ""
+        };
+      }
+
+      const lines = normalizeImportText(sectionText).split("\n").map(line => line.trim()).filter(Boolean);
+      const row = lines.find(line => /^[A-Z0-9]{2,}\s+[A-Z0-9-]{3,}\s+/.test(line) && !normalizeKey(line).includes("codigo homologacion"));
+      if (!row) {
+        const cells = getTableCells(sectionText);
+        if (cells.length < 3) return {};
+        return {
+          code: cells[0],
+          serial: cells[1],
+          operation: cells[2],
+          manufactureDate: cells[3] || "",
+          crpc: cells[4] || "",
+          reviewDate: cells[5] || "",
+          result: cells[6] || "",
+          certificate: cells[7] || ""
+        };
+      }
+      const match = row.match(/^(\S+)\s+(\S+)\s+(.+?)\s+(\d{1,2}\s*[\/.-]\s*\d{2,4})\s+(\S+)\s+(\d{1,2}\s*[\/.-]\s*\d{2,4})(?:\s+(\S+))?(?:\s+(\S+))?/);
+      if (match) {
+        return {
+          code: match[1],
+          serial: match[2],
+          operation: match[3],
+          manufactureDate: match[4],
+          crpc: match[5],
+          reviewDate: match[6],
+          result: match[7] || "",
+          certificate: match[8] || ""
+        };
+      }
+      const simple = row.match(/^(\S+)\s+(\S+)\s+(.+)$/);
+      return simple ? { code: simple[1], serial: simple[2], operation: simple[3] } : {};
+    }
+
     function setFieldIfFound(id, value) {
       const field = document.getElementById(id);
       if (!field || !value) return 0;
       field.value = value.trim();
+      return 1;
+    }
+
+    function setDateFieldIfFound(id, value) {
+      const field = document.getElementById(id);
+      if (!field || !value) return 0;
+      field.value = normalizeImportedDate(value);
+      return 1;
+    }
+
+    function setMonthFieldIfFound(id, value) {
+      const field = document.getElementById(id);
+      if (!field || !value) return 0;
+      field.value = normalizeImportedMonth(value);
+      return 1;
+    }
+
+    function setSelectIfFound(id, value) {
+      const field = document.getElementById(id);
+      if (!field || !value) return 0;
+      const key = normalizeKey(value);
+      const option = Array.from(field.options).find(item => normalizeKey(item.value) === key || normalizeKey(item.textContent) === key);
+      if (!option) return 0;
+      field.value = option.value;
+      return 1;
+    }
+
+    function appendImportedNote(text) {
+      const notes = document.getElementById("notes");
+      const normalized = normalizeImportText(text);
+      if (!notes || !normalized) return 0;
+      const marker = "Detalle ENARGAS importado:";
+      if (notes.value.includes(marker)) return 0;
+      notes.value = [notes.value.trim(), `${marker}\n${normalized}`].filter(Boolean).join("\n\n");
       return 1;
     }
 
@@ -1256,25 +1537,61 @@
       }
 
       let imported = 0;
-      imported += setFieldIfFound("vehicleDomain", findImportedValue(text, ["Dominio", "Patente"]));
-      imported += setFieldIfFound("waferNumber", findImportedValue(text, ["Oblea", "Número de oblea", "Nro. oblea", "N° oblea"]));
-      imported += setFieldIfFound("vehicleBrand", findImportedValue(text, ["Marca"]));
-      imported += setFieldIfFound("vehicleModel", findImportedValue(text, ["Modelo"]));
-      imported += setFieldIfFound("vehicleYear", findImportedValue(text, ["Año", "Anio"]));
-      imported += setFieldIfFound("regulatorActualCode", findImportedValue(text, ["Código regulador", "Regulador código", "Regulador actual código"]));
-      imported += setFieldIfFound("regulatorActualSerial", findImportedValue(text, ["Serie regulador", "Número de serie regulador", "Regulador actual número de serie"]));
-      imported += setFieldIfFound("cylinderCode", findImportedValue(text, ["Código cilindro", "Cilindro código"]));
-      imported += setFieldIfFound("cylinderSerial", findImportedValue(text, ["Serie cilindro", "Número de serie cilindro", "Cilindro número de serie"]));
-      imported += setFieldIfFound("cylinderManufactureDate", findImportedValue(text, ["Fecha fabricación", "Fecha de fabricación"]));
-      imported += setFieldIfFound("cylinderReviewDate", findImportedValue(text, ["Fecha revisado", "Fecha de revisado", "Revisión", "Revision"]));
-      imported += setFieldIfFound("cylinderCrpc", findImportedValue(text, ["CRPC"]));
-      imported += setFieldIfFound("valveCode", findImportedValue(text, ["Código válvula", "Código valvula", "Válvula código", "Valvula código"]));
-      imported += setFieldIfFound("valveSerial", findImportedValue(text, ["Serie válvula", "Serie valvula", "Número de serie válvula", "Número de serie valvula"]));
+      const vehicleText = findImportedSection(text, ["Vehículo", "Datos del vehículo"]);
+      const ownerText = findImportedSection(text, ["Titular", "Propietario", "Datos del titular", "Datos del propietario"]);
+      const regulatorText = findImportedSection(text, ["Regulador"]);
+      const cylinderText = findImportedSection(text, ["Cilindro"]);
+      const valveText = findImportedSection(text, ["Válvula", "Valvula", "Válvula de cilindro"]);
+      const regulatorTable = parseRegulatorTable(regulatorText);
+      const cylinderTable = parseCylinderTable(cylinderText);
+      const valveTable = parseValveTable(valveText);
+
+      imported += setFieldIfFound("vehicleDomain", findImportedAny(text, ["Dominio", "Patente", "Chapa patente"], [/\b([A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})\b/i]));
+      imported += setFieldIfFound("waferNumber", findImportedAny(text, ["Oblea Actual", "Oblea", "Número de oblea", "Numero de oblea", "Nro. oblea", "N° oblea", "Nro oblea"]));
+      imported += setFieldIfFound("vehicleBrand", findImportedAny(vehicleText || text, ["Marca", "Marca vehículo", "Marca vehiculo"]));
+      imported += setFieldIfFound("vehicleModel", findImportedAny(vehicleText || text, ["Modelo", "Modelo vehículo", "Modelo vehiculo"]));
+      imported += setFieldIfFound("vehicleYear", findImportedAny(vehicleText || text, ["Año", "Anio", "Año vehículo", "Año vehiculo", "Modelo año"], [/\b(19\d{2}|20\d{2})\b/]));
+      imported += setSelectIfFound("injection", findImportedAny(vehicleText || text, ["Inyección", "Inyeccion", "Posee inyección", "Posee inyeccion"]));
+      imported += setSelectIfFound("vehicleType", findImportedAny(vehicleText || text, ["Tipo de vehículo", "Tipo de vehiculo", "Uso", "Servicio"]));
+
+      imported += setFieldIfFound("ownerName", findImportedAny(ownerText || text, ["Titular", "Propietario", "Apellido y nombre", "Nombre y apellido", "Razón social", "Razon social"]));
+      imported += setFieldIfFound("ownerStreet", findImportedAny(ownerText || text, ["Domicilio", "Dirección", "Direccion", "Calle"]));
+      imported += setFieldIfFound("postalCode", findImportedAny(ownerText || text, ["Código postal", "Codigo postal", "CP"]));
+      imported += setFieldIfFound("city", findImportedAny(ownerText || text, ["Localidad", "Ciudad"]));
+      imported += setFieldIfFound("province", findImportedAny(ownerText || text, ["Provincia"]));
+      imported += setFieldIfFound("phone", findImportedAny(ownerText || text, ["Teléfono", "Telefono", "Celular"]));
+      imported += setSelectIfFound("documentType", findImportedAny(ownerText || text, ["Tipo documento", "Tipo de documento", "Documento tipo"]));
+      imported += setFieldIfFound("documentNumber", findImportedAny(ownerText || text, ["Documento", "Número documento", "Numero documento", "DNI", "CUIT", "CUIL"]));
+
+      imported += setFieldIfFound("regulatorActualCode", regulatorTable.code || findImportedAny(regulatorText || text, ["Código regulador", "Codigo regulador", "Código homologación", "Codigo homologacion", "Código", "Codigo"]));
+      imported += setFieldIfFound("regulatorActualSerial", regulatorTable.serial || findImportedAny(regulatorText || text, ["Serie regulador", "Número de serie regulador", "Numero de serie regulador", "Nro serie regulador", "Nro. serie", "Número de serie", "Numero de serie", "Serie"]));
+      imported += setFieldIfFound("cylinderCode", cylinderTable.code || findImportedAny(cylinderText || text, ["Código cilindro", "Codigo cilindro", "Código homologación", "Codigo homologacion", "Código", "Codigo"]));
+      imported += setFieldIfFound("cylinderSerial", cylinderTable.serial || findImportedAny(cylinderText || text, ["Serie cilindro", "Número de serie cilindro", "Numero de serie cilindro", "Nro serie cilindro", "Nro. serie", "Número de serie", "Numero de serie", "Serie"]));
+      imported += setSelectIfFound("cylinderNew", findImportedAny(cylinderText || text, ["Nuevo", "Cilindro nuevo"]));
+      imported += setSelectIfFound("cylinderOperation", cylinderTable.operation || findImportedAny(cylinderText || text, ["Tipo de operación", "Tipo de operacion", "Operación", "Operacion"]));
+      imported += setMonthFieldIfFound("cylinderManufactureDate", cylinderTable.manufactureDate || findImportedAny(cylinderText || text, ["Fecha Fab.", "Fecha fabricación", "Fecha de fabricación", "Fecha fabricacion", "Fabricación", "Fabricacion"]));
+      imported += setMonthFieldIfFound("cylinderReviewDate", cylinderTable.reviewDate || findImportedAny(cylinderText || text, ["Fecha CRPC", "Fecha revisado", "Fecha de revisado", "Revisión", "Revision", "Revisado"]));
+      imported += setFieldIfFound("cylinderCrpc", cylinderTable.crpc || findImportedAny(cylinderText || text, ["CRPC", "Centro de revisión", "Centro de revision"]));
+      imported += setFieldIfFound("valveCode", valveTable.code || findImportedAny(valveText || text, ["Código válvula", "Codigo valvula", "Válvula código", "Valvula codigo", "Código", "Codigo"]));
+      imported += setFieldIfFound("valveSerial", valveTable.serial || findImportedAny(valveText || text, ["Serie válvula", "Serie valvula", "Número de serie válvula", "Numero de serie valvula", "Nro serie válvula", "Nro serie valvula", "Nro. serie", "Número de serie", "Numero de serie", "Serie"]));
+      imported += setSelectIfFound("valveOperation", valveTable.operation || findImportedAny(valveText || text, ["Tipo de operación", "Tipo de operacion", "Operación", "Operacion"]));
+      imported += setDateFieldIfFound("waferDue", findImportedAny(text, ["Fecha Vencimiento", "Vencimiento oblea", "Vence oblea", "Fecha vencimiento oblea", "Vigencia oblea", "Oblea vigente hasta"]));
+      imported += setDateFieldIfFound("hydraulicDue", findImportedAny(text, ["Vencimiento hidráulica", "Vencimiento hidraulica", "Vence hidráulica", "Vence hidraulica", "Fecha vencimiento cilindro", "Vencimiento cilindro"]));
+
+      if (imported) appendImportedNote(text);
 
       status.textContent = imported
         ? `Se completaron ${imported} campo/s detectados. Revisá antes de guardar.`
         : "No pude reconocer campos. Probá copiar más contenido del resultado.";
     }
+
+    window.importEnargasText = importEnargasText;
+    document.addEventListener("registro-gnc:import-enargas", event => {
+      const text = event.detail?.text || "";
+      if (!text) return;
+      document.getElementById("enargasText").value = text;
+      importEnargasText();
+    });
 
     function searchable(client) {
       return [
@@ -1518,6 +1835,7 @@
       }
       clearForm();
       renderTable();
+      showTab("clientsPanel");
     });
 
     attachmentInput.addEventListener("change", async event => {
@@ -1529,6 +1847,13 @@
     search.addEventListener("input", renderTable);
     statusFilter.addEventListener("change", renderTable);
     document.getElementById("resetBtn").addEventListener("click", clearForm);
+    tabButtons.forEach(button => {
+      button.addEventListener("click", () => showTab(button.dataset.tabTarget));
+    });
+    document.getElementById("newRecordBtn").addEventListener("click", () => {
+      clearForm();
+      showTab("recordPanel");
+    });
 
     document.getElementById("seedBtn").addEventListener("click", () => {
       if (clients.length && !confirm("Esto agrega registros de ejemplo. ¿Continuar?")) return;
@@ -1637,6 +1962,7 @@
       );
       saveClients();
       renderTable();
+      showTab("clientsPanel");
     });
 
     document.getElementById("exportBtn").addEventListener("click", () => {
@@ -1651,7 +1977,10 @@
 
     window.editClient = function(id) {
       const client = clients.find(item => item.id === id);
-      if (client) fillForm(client);
+      if (client) {
+        fillForm(client);
+        showTab("recordPanel");
+      }
     };
 
     window.deleteClient = async function(id) {

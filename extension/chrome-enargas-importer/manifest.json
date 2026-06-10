@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Registro GNC - Importador ENARGAS",
+  "version": "0.1.0",
+  "description": "Toma el detalle de operacion de ENARGAS y lo envia a la planilla Registro GNC.",
+  "permissions": ["activeTab", "tabs", "scripting", "clipboardWrite"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "Importar ENARGAS",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["app-content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
