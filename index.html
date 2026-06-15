@@ -532,7 +532,7 @@
       <div class="session">
         <span class="user-pill" id="userLabel">Usuario beta</span>
         <button class="ghost" id="seedBtn" type="button">Cargar ejemplo</button>
-        <button class="ghost" id="logoutBtn" type="button">Salir</button>
+        <button class="ghost" id="logoutBtn" type="button" hidden>Salir</button>
       </div>
     </header>
 
@@ -912,7 +912,7 @@
       loginScreen.hidden = true;
       appShell.hidden = false;
       userLabel.textContent = `${session.name} · ${session.plan}`;
-      storageNote.textContent = currentUser ? "Guardado online" : "Guardado local";
+      storageNote.textContent = currentUser ? "Guardado online" : "Guardado local sin login";
       if (currentUser) await loadCloudClients();
       renderTable();
     }
@@ -2120,14 +2120,12 @@
 
     async function bootApp() {
       setTodayOnNewRecord();
-      if (supabaseClient) {
-        const { data } = await supabaseClient.auth.getSession();
-        currentUser = data.session?.user || null;
-      }
-      if (await handlePasswordRecoverySession()) return;
-      const activeSession = loadSession();
-      if (activeSession && (!supabaseClient || currentUser)) await showApp(activeSession);
-      else showLogin();
+      currentUser = null;
+      localStorage.removeItem(SESSION_KEY);
+      await showApp({
+        name: "Modo prueba",
+        plan: "Sin login"
+      });
     }
 
     bootApp();
