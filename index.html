@@ -225,6 +225,36 @@
       display: none;
     }
 
+    .component-table {
+      display: grid;
+      gap: 10px;
+    }
+
+    .cylinder-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 160px 120px 100px 120px 1fr 1fr 160px auto;
+      gap: 10px;
+      align-items: end;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfd;
+    }
+
+    .cylinder-row .field {
+      margin-bottom: 0;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      font-size: 18px;
+      line-height: 1;
+    }
+
     .field { margin-bottom: 13px; }
 
     .form-block {
@@ -423,7 +453,7 @@
     @media (max-width: 640px) {
       main { padding: 12px; }
       header { padding: 15px; }
-      .grid, .stats, .component-line { grid-template-columns: 1fr; }
+      .grid, .stats, .component-line, .cylinder-row { grid-template-columns: 1fr; }
       table, thead, tbody, th, td, tr { display: block; }
       thead { display: none; }
       tr {
@@ -705,74 +735,10 @@
           </div>
 
           <div class="form-block">
-            <h3>Cilindro</h3>
-            <div class="grid">
-              <div class="field">
-                <label for="cylinderCode">Código</label>
-                <input id="cylinderCode" placeholder="Código">
-              </div>
-              <div class="field">
-                <label for="cylinderSerial">Número de serie</label>
-                <input id="cylinderSerial" placeholder="Número de serie">
-              </div>
-            </div>
-            <div class="grid">
-              <div class="field">
-                <label for="cylinderNew">Nuevo</label>
-                <select id="cylinderNew">
-                  <option value="">Seleccionar</option>
-                  <option value="Sí">Sí</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="cylinderOperation">Tipo de operación</label>
-                <select id="cylinderOperation">
-                  <option value="">Seleccionar</option>
-                  <option value="Modificación">Modificación</option>
-                  <option value="Sin cambios">Sin cambios</option>
-                  <option value="Desmontaje">Desmontaje</option>
-                  <option value="Baja">Baja</option>
-                </select>
-              </div>
-            </div>
-            <div class="grid">
-              <div class="field">
-                <label for="cylinderManufactureDate">Fecha fabricación</label>
-                <input id="cylinderManufactureDate" placeholder="MM/AAAA">
-              </div>
-              <div class="field">
-                <label for="cylinderReviewDate">Fecha de revisado</label>
-                <input id="cylinderReviewDate" placeholder="MM/AAAA">
-              </div>
-            </div>
-            <div class="field">
-              <label for="cylinderCrpc">CRPC</label>
-              <input id="cylinderCrpc" placeholder="CRPC">
-            </div>
-          </div>
-
-          <div class="form-block">
-            <h3>Válvula de cilindro</h3>
-            <div class="grid">
-              <div class="field">
-                <label for="valveCode">Código</label>
-                <input id="valveCode" placeholder="Código">
-              </div>
-              <div class="field">
-                <label for="valveSerial">Número de serie</label>
-                <input id="valveSerial" placeholder="Número de serie">
-              </div>
-            </div>
-            <div class="field">
-              <label for="valveOperation">Tipo de operación</label>
-              <select id="valveOperation">
-                <option value="">Seleccionar</option>
-                <option value="Modificación">Modificación</option>
-                <option value="Sin cambios">Sin cambios</option>
-                <option value="Desmontaje">Desmontaje</option>
-                <option value="Baja">Baja</option>
-              </select>
+            <h3>Cilindros y válvulas</h3>
+            <div class="component-table" id="cylinderRows"></div>
+            <div class="inline-tools">
+              <button class="ghost" id="addCylinderBtn" type="button">Agregar cilindro</button>
             </div>
           </div>
 
@@ -1012,6 +978,17 @@
         regulatorRemoveSerial: row.regulator_remove_serial || "",
         regulatorCancelCode: row.regulator_cancel_code || "",
         regulatorCancelSerial: row.regulator_cancel_serial || "",
+        cylinderRows: cylinderRowsFromClient({
+          cylinderCode: row.cylinder_code || "",
+          cylinderSerial: row.cylinder_serial || "",
+          cylinderOperation: row.cylinder_operation || "",
+          cylinderManufactureDate: row.cylinder_manufacture_date || "",
+          cylinderReviewDate: row.cylinder_review_date || "",
+          cylinderCrpc: row.cylinder_crpc || "",
+          valveCode: row.valve_code || "",
+          valveSerial: row.valve_serial || "",
+          valveOperation: row.valve_operation || ""
+        }),
         cylinderCode: row.cylinder_code || "",
         cylinderSerial: row.cylinder_serial || "",
         cylinderNew: row.cylinder_new || "",
@@ -1204,6 +1181,133 @@
       }
     }
 
+    function normalizeComponentOperation(value) {
+      const key = String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+      if (!key || key === "actual" || key === "a" || key === "sin cambios") return "[A] Actual";
+      if (key === "montaje" || key === "m" || key === "modificacion") return "[M] Montaje";
+      if (key === "desmontaje" || key === "d") return "[D] Desmontaje";
+      if (key === "baja por robo" || key === "br") return "[BR] Baja por Robo";
+      if (key === "baja" || key === "b") return "[B] Baja";
+      return value || "[A] Actual";
+    }
+
+    function emptyCylinderRow() {
+      return {
+        cylinderCode: "",
+        cylinderSerial: "",
+        cylinderOperation: "[A] Actual",
+        cylinderManufactureDate: "",
+        cylinderCrpc: "",
+        cylinderReviewDate: "",
+        valveCode: "",
+        valveSerial: "",
+        valveOperation: "[A] Actual"
+      };
+    }
+
+    function cylinderRowsFromClient(client) {
+      if (Array.isArray(client.cylinderRows) && client.cylinderRows.length) {
+        return client.cylinderRows.map(row => ({
+          ...emptyCylinderRow(),
+          ...row,
+          cylinderOperation: normalizeComponentOperation(row.cylinderOperation),
+          valveOperation: normalizeComponentOperation(row.valveOperation)
+        }));
+      }
+      const legacy = {
+        cylinderCode: client.cylinderCode || "",
+        cylinderSerial: client.cylinderSerial || "",
+        cylinderOperation: normalizeComponentOperation(client.cylinderOperation),
+        cylinderManufactureDate: client.cylinderManufactureDate || "",
+        cylinderCrpc: client.cylinderCrpc || "",
+        cylinderReviewDate: client.cylinderReviewDate || "",
+        valveCode: client.valveCode || "",
+        valveSerial: client.valveSerial || "",
+        valveOperation: normalizeComponentOperation(client.valveOperation)
+      };
+      return Object.values(legacy).some(Boolean) ? [legacy] : [emptyCylinderRow()];
+    }
+
+    function operationOptions(selectedValue) {
+      const selected = normalizeComponentOperation(selectedValue);
+      return ["[A] Actual", "[M] Montaje", "[D] Desmontaje", "[B] Baja", "[BR] Baja por Robo"]
+        .map(value => `<option value="${value}"${value === selected ? " selected" : ""}>${value}</option>`)
+        .join("");
+    }
+
+    function renderCylinderRows(rows = [emptyCylinderRow()]) {
+      const list = rows.length ? rows : [emptyCylinderRow()];
+      document.getElementById("cylinderRows").innerHTML = list.map((row, index) => `
+        <div class="cylinder-row" data-cylinder-row>
+          <div class="field">
+            <label>Código cilindro</label>
+            <input data-cylinder-field="cylinderCode" value="${escapeHtml(row.cylinderCode)}" placeholder="Código">
+          </div>
+          <div class="field">
+            <label>Número de serie</label>
+            <input data-cylinder-field="cylinderSerial" value="${escapeHtml(row.cylinderSerial)}" placeholder="Número de serie">
+          </div>
+          <div class="field">
+            <label>Tipo de operación</label>
+            <select data-cylinder-field="cylinderOperation">${operationOptions(row.cylinderOperation)}</select>
+          </div>
+          <div class="field">
+            <label>Fecha fabricación</label>
+            <input data-cylinder-field="cylinderManufactureDate" value="${escapeHtml(row.cylinderManufactureDate)}" placeholder="MM/AAAA">
+          </div>
+          <div class="field">
+            <label>CRPC</label>
+            <input data-cylinder-field="cylinderCrpc" value="${escapeHtml(row.cylinderCrpc)}" placeholder="CRPC">
+          </div>
+          <div class="field">
+            <label>Fecha CRPC</label>
+            <input data-cylinder-field="cylinderReviewDate" value="${escapeHtml(row.cylinderReviewDate)}" placeholder="MM/AAAA">
+          </div>
+          <div class="field">
+            <label>Cód. válvula</label>
+            <input data-cylinder-field="valveCode" value="${escapeHtml(row.valveCode)}" placeholder="Código">
+          </div>
+          <div class="field">
+            <label>Serie válvula</label>
+            <input data-cylinder-field="valveSerial" value="${escapeHtml(row.valveSerial)}" placeholder="Número de serie">
+          </div>
+          <div class="field">
+            <label>Operación válvula</label>
+            <select data-cylinder-field="valveOperation">${operationOptions(row.valveOperation)}</select>
+          </div>
+          <button class="danger icon-button" data-remove-cylinder type="button" ${list.length === 1 ? "disabled" : ""} title="Quitar cilindro">x</button>
+        </div>
+      `).join("");
+    }
+
+    function readCylinderRows() {
+      const rows = readVisibleCylinderRows();
+      const filled = rows.filter(row => Object.entries(row).some(([key, value]) => key.includes("Operation") ? value !== "[A] Actual" : Boolean(value)));
+      return filled.length ? filled : [emptyCylinderRow()];
+    }
+
+    function readVisibleCylinderRows() {
+      return Array.from(document.querySelectorAll("[data-cylinder-row]")).map(row => {
+        const value = field => row.querySelector(`[data-cylinder-field="${field}"]`)?.value.trim() || "";
+        return {
+          cylinderCode: value("cylinderCode"),
+          cylinderSerial: value("cylinderSerial"),
+          cylinderOperation: value("cylinderOperation") || "[A] Actual",
+          cylinderManufactureDate: value("cylinderManufactureDate"),
+          cylinderCrpc: value("cylinderCrpc"),
+          cylinderReviewDate: value("cylinderReviewDate"),
+          valveCode: value("valveCode"),
+          valveSerial: value("valveSerial"),
+          valveOperation: value("valveOperation") || "[A] Actual"
+        };
+      });
+    }
+
     function readForm() {
       const ownerName = document.getElementById("ownerName").value.trim();
       const documentType = document.getElementById("documentType").value;
@@ -1224,6 +1328,8 @@
         regulatorInstallCode,
         regulatorInstallSerial
       );
+      const cylinderRows = readCylinderRows();
+      const primaryCylinder = cylinderRows[0] || emptyCylinderRow();
 
       return {
         id: document.getElementById("clientId").value || crypto.randomUUID(),
@@ -1248,16 +1354,17 @@
         regulatorSerial,
         regulatorOperation,
         ...legacyRegulator,
-        cylinderCode: document.getElementById("cylinderCode").value.trim(),
-        cylinderSerial: document.getElementById("cylinderSerial").value.trim(),
-        cylinderNew: document.getElementById("cylinderNew").value,
-        cylinderManufactureDate: document.getElementById("cylinderManufactureDate").value.trim(),
-        cylinderReviewDate: document.getElementById("cylinderReviewDate").value.trim(),
-        cylinderCrpc: document.getElementById("cylinderCrpc").value.trim(),
-        cylinderOperation: document.getElementById("cylinderOperation").value,
-        valveCode: document.getElementById("valveCode").value.trim(),
-        valveSerial: document.getElementById("valveSerial").value.trim(),
-        valveOperation: document.getElementById("valveOperation").value,
+        cylinderRows,
+        cylinderCode: primaryCylinder.cylinderCode,
+        cylinderSerial: primaryCylinder.cylinderSerial,
+        cylinderNew: "",
+        cylinderManufactureDate: primaryCylinder.cylinderManufactureDate,
+        cylinderReviewDate: primaryCylinder.cylinderReviewDate,
+        cylinderCrpc: primaryCylinder.cylinderCrpc,
+        cylinderOperation: primaryCylinder.cylinderOperation,
+        valveCode: primaryCylinder.valveCode,
+        valveSerial: primaryCylinder.valveSerial,
+        valveOperation: primaryCylinder.valveOperation,
         waferDue: document.getElementById("waferDue").value,
         hydraulicDue: document.getElementById("hydraulicDue").value,
         notes: document.getElementById("notes").value.trim(),
@@ -1305,16 +1412,7 @@
       document.getElementById("regulatorInstallCode").value = client.regulatorInstallCode || "";
       document.getElementById("regulatorInstallSerial").value = client.regulatorInstallSerial || "";
       updateRegulatorReplacementVisibility();
-      document.getElementById("cylinderCode").value = client.cylinderCode || "";
-      document.getElementById("cylinderSerial").value = client.cylinderSerial || "";
-      document.getElementById("cylinderNew").value = client.cylinderNew || "";
-      document.getElementById("cylinderManufactureDate").value = client.cylinderManufactureDate || "";
-      document.getElementById("cylinderReviewDate").value = client.cylinderReviewDate || "";
-      document.getElementById("cylinderCrpc").value = client.cylinderCrpc || "";
-      document.getElementById("cylinderOperation").value = client.cylinderOperation || "";
-      document.getElementById("valveCode").value = client.valveCode || "";
-      document.getElementById("valveSerial").value = client.valveSerial || "";
-      document.getElementById("valveOperation").value = client.valveOperation || "";
+      renderCylinderRows(cylinderRowsFromClient(client));
       document.getElementById("waferDue").value = client.waferDue || "";
       document.getElementById("hydraulicDue").value = client.hydraulicDue || "";
       document.getElementById("notes").value = client.notes || "";
@@ -1332,6 +1430,7 @@
       formTitle.textContent = "Nuevo registro";
       setTodayOnNewRecord();
       updateRegulatorReplacementVisibility();
+      renderCylinderRows([emptyCylinderRow()]);
       renderAttachments();
     }
 
@@ -1381,6 +1480,7 @@
         client.regulatorRemoveSerial,
         client.regulatorCancelCode,
         client.regulatorCancelSerial,
+        JSON.stringify(client.cylinderRows || []),
         client.cylinderCode,
         client.cylinderSerial,
         client.cylinderCrpc,
@@ -1630,6 +1730,15 @@
     });
 
     document.getElementById("regulatorOperation").addEventListener("change", updateRegulatorReplacementVisibility);
+    document.getElementById("addCylinderBtn").addEventListener("click", () => {
+      renderCylinderRows(readVisibleCylinderRows().concat(emptyCylinderRow()));
+    });
+    document.getElementById("cylinderRows").addEventListener("click", event => {
+      if (!event.target.matches("[data-remove-cylinder]")) return;
+      event.target.closest("[data-cylinder-row]")?.remove();
+      const rows = readCylinderRows();
+      renderCylinderRows(rows.length ? rows : [emptyCylinderRow()]);
+    });
     attachmentInput.addEventListener("change", async event => {
       const files = await filesToData(event.target.files);
       pendingAttachments = pendingAttachments.concat(files);
@@ -1793,6 +1902,7 @@
       const client = clients.find(item => item.id === id);
       if (!client) return;
       const status = dateStatus(client);
+      const cylinderRows = cylinderRowsFromClient(client);
       printArea.innerHTML = `
         <div class="print-title">
           <h1>Ficha de cliente GNC</h1>
@@ -1826,24 +1936,20 @@
           </div>
         </div>
         <div class="print-section">
-          <h2>Cilindro</h2>
-          <div class="print-grid">
-            <div><span class="print-label">Código</span>${escapeHtml(client.cylinderCode || "-")}</div>
-            <div><span class="print-label">Número de serie</span>${escapeHtml(client.cylinderSerial || "-")}</div>
-            <div><span class="print-label">Nuevo</span>${escapeHtml(client.cylinderNew || "-")}</div>
-            <div><span class="print-label">Fecha fabricación</span>${escapeHtml(client.cylinderManufactureDate || "-")}</div>
-            <div><span class="print-label">Fecha de revisado</span>${escapeHtml(client.cylinderReviewDate || "-")}</div>
-            <div><span class="print-label">CRPC</span>${escapeHtml(client.cylinderCrpc || "-")}</div>
-            <div><span class="print-label">Tipo de operación</span>${escapeHtml(client.cylinderOperation || "-")}</div>
-          </div>
-        </div>
-        <div class="print-section">
-          <h2>Válvula de cilindro</h2>
-          <div class="print-grid">
-            <div><span class="print-label">Código</span>${escapeHtml(client.valveCode || "-")}</div>
-            <div><span class="print-label">Número de serie</span>${escapeHtml(client.valveSerial || "-")}</div>
-            <div><span class="print-label">Tipo de operación</span>${escapeHtml(client.valveOperation || "-")}</div>
-          </div>
+          <h2>Cilindros y válvulas</h2>
+          ${cylinderRows.map((row, index) => `
+            <div class="print-grid">
+              <div><span class="print-label">Cilindro ${index + 1} - Código</span>${escapeHtml(row.cylinderCode || "-")}</div>
+              <div><span class="print-label">Número de serie</span>${escapeHtml(row.cylinderSerial || "-")}</div>
+              <div><span class="print-label">Tipo de operación</span>${escapeHtml(row.cylinderOperation || "-")}</div>
+              <div><span class="print-label">Fecha fabricación</span>${escapeHtml(row.cylinderManufactureDate || "-")}</div>
+              <div><span class="print-label">CRPC</span>${escapeHtml(row.cylinderCrpc || "-")}</div>
+              <div><span class="print-label">Fecha CRPC</span>${escapeHtml(row.cylinderReviewDate || "-")}</div>
+              <div><span class="print-label">Válvula - Código homologación</span>${escapeHtml(row.valveCode || "-")}</div>
+              <div><span class="print-label">Válvula - Número de serie</span>${escapeHtml(row.valveSerial || "-")}</div>
+              <div><span class="print-label">Válvula - Tipo de operación</span>${escapeHtml(row.valveOperation || "-")}</div>
+            </div>
+          `).join("")}
         </div>
         <div class="print-section">
           <h2>Vencimientos</h2>
@@ -1864,6 +1970,7 @@
 
     async function bootApp() {
       setTodayOnNewRecord();
+      renderCylinderRows([emptyCylinderRow()]);
       currentUser = null;
       localStorage.removeItem(SESSION_KEY);
       await showApp({

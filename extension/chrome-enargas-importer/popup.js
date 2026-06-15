@@ -147,10 +147,18 @@ async function extractEnargasData(tabId) {
         };
       }
 
-      function parseCylinder(table) {
+      function parseSimpleComponents(table) {
+        const rows = table ? tableRows(table).slice(1) : [];
+        return rows.map(row => ({
+          code: row[0] || "",
+          serial: row[1] || "",
+          operation: row[2] || ""
+        })).filter(row => row.code || row.serial || row.operation);
+      }
+
+      function parseCylinders(table) {
         const rows = table ? tableRows(table) : [];
-        const row = rows[1] || [];
-        return {
+        return rows.slice(1).map(row => ({
           code: row[0] || "",
           serial: row[1] || "",
           operation: row[2] || "",
@@ -159,14 +167,30 @@ async function extractEnargasData(tabId) {
           reviewDate: row[5] || "",
           result: row[6] || "",
           certificate: row[7] || ""
-        };
+        })).filter(row => row.code || row.serial || row.operation);
       }
 
       const simpleTables = findTablesByHeaders(["Código Homologación", "Número de Serie", "Operación"]);
       const cylinderTable = findTablesByHeaders(["Código Homologación", "Número de Serie", "Fecha Fab", "CRPC"])[0];
       const regulator = parseSimpleComponent(simpleTables[0]);
-      const valve = parseSimpleComponent(simpleTables[1]);
-      const cylinder = parseCylinder(cylinderTable);
+      const valves = parseSimpleComponents(simpleTables[1]);
+      const cylinders = parseCylinders(cylinderTable);
+      const cylinderRows = (cylinders.length ? cylinders : [{}]).map((cylinder, index) => {
+        const valve = valves[index] || {};
+        return {
+          cylinderCode: cylinder.code || "",
+          cylinderSerial: cylinder.serial || "",
+          cylinderOperation: cylinder.operation || "",
+          cylinderManufactureDate: cylinder.manufactureDate || "",
+          cylinderCrpc: cylinder.crpc || "",
+          cylinderReviewDate: cylinder.reviewDate || "",
+          valveCode: valve.code || "",
+          valveSerial: valve.serial || "",
+          valveOperation: valve.operation || ""
+        };
+      });
+      const cylinder = cylinders[0] || {};
+      const valve = valves[0] || {};
       const raw = [
         "Datos de la Operación",
         `Operación: ${findValue("Operación")}`,
@@ -185,10 +209,10 @@ async function extractEnargasData(tabId) {
         [regulator.code, regulator.serial, regulator.operation].filter(Boolean).join("\t"),
         "Datos Cilindro",
         ["Código Homologación", "Número de Serie", "Operación", "Fecha Fab.", "CRPC", "Fecha CRPC", "Resultado", "Nro. Certificado"].join("\t"),
-        [cylinder.code, cylinder.serial, cylinder.operation, cylinder.manufactureDate, cylinder.crpc, cylinder.reviewDate, cylinder.result, cylinder.certificate].filter(Boolean).join("\t"),
+        ...cylinders.map(row => [row.code, row.serial, row.operation, row.manufactureDate, row.crpc, row.reviewDate, row.result, row.certificate].filter(Boolean).join("\t")),
         "Dato Válvula del Cilindro",
         ["Código Homologación", "Número de Serie", "Operación"].join("\t"),
-        [valve.code, valve.serial, valve.operation].filter(Boolean).join("\t")
+        ...valves.map(row => [row.code, row.serial, row.operation].filter(Boolean).join("\t"))
       ].filter(line => !/:\s*$/.test(line) && line.trim()).join("\n");
 
       return {
@@ -204,6 +228,7 @@ async function extractEnargasData(tabId) {
           regulatorActualCode: regulator.code,
           regulatorActualSerial: regulator.serial,
           regulatorOperation: regulator.operation,
+          cylinderRows,
           cylinderCode: cylinder.code,
           cylinderSerial: cylinder.serial,
           cylinderOperation: cylinder.operation,
@@ -307,6 +332,39 @@ async function fillRegistro(data) {
             return value;
           }
 
+          function setRowField(row, fieldName, value) {
+            const field = row.querySelector(`[data-cylinder-field="${fieldName}"]`);
+            if (!field || !clean(value)) return 0;
+            field.value = fieldName.includes("Operation") ? normalizeRegulatorOperation(value) : clean(value);
+            field.dispatchEvent(new Event("input", { bubbles: true }));
+            field.dispatchEvent(new Event("change", { bubbles: true }));
+            return 1;
+          }
+
+          function fillCylinderRows(rows) {
+            const dataRows = Array.isArray(rows) ? rows.filter(row => Object.values(row || {}).some(Boolean)) : [];
+            if (!dataRows.length) return 0;
+            const addButton = document.getElementById("addCylinderBtn");
+            const list = document.getElementById("cylinderRows");
+            if (!addButton || !list) return 0;
+            while (list.querySelectorAll("[data-cylinder-row]").length < dataRows.length) addButton.click();
+            let imported = 0;
+            Array.from(list.querySelectorAll("[data-cylinder-row]")).forEach((row, index) => {
+              const data = dataRows[index];
+              if (!data) return;
+              imported += setRowField(row, "cylinderCode", data.cylinderCode);
+              imported += setRowField(row, "cylinderSerial", data.cylinderSerial);
+              imported += setRowField(row, "cylinderOperation", data.cylinderOperation);
+              imported += setRowField(row, "cylinderManufactureDate", normalizeMonth(data.cylinderManufactureDate));
+              imported += setRowField(row, "cylinderCrpc", data.cylinderCrpc);
+              imported += setRowField(row, "cylinderReviewDate", normalizeMonth(data.cylinderReviewDate));
+              imported += setRowField(row, "valveCode", data.valveCode);
+              imported += setRowField(row, "valveSerial", data.valveSerial);
+              imported += setRowField(row, "valveOperation", data.valveOperation);
+            });
+            return imported;
+          }
+
           const fields = imported.fields || {};
           let count = 0;
           count += setField("waferNumber", fields.waferNumber);
@@ -319,15 +377,7 @@ async function fillRegistro(data) {
           count += setField("regulatorCode", fields.regulatorActualCode);
           count += setField("regulatorSerial", fields.regulatorActualSerial);
           count += setSelect("regulatorOperation", normalizeRegulatorOperation(fields.regulatorOperation));
-          count += setField("cylinderCode", fields.cylinderCode);
-          count += setField("cylinderSerial", fields.cylinderSerial);
-          count += setSelect("cylinderOperation", fields.cylinderOperation);
-          count += setField("cylinderManufactureDate", normalizeMonth(fields.cylinderManufactureDate));
-          count += setField("cylinderReviewDate", normalizeMonth(fields.cylinderReviewDate));
-          count += setField("cylinderCrpc", fields.cylinderCrpc);
-          count += setField("valveCode", fields.valveCode);
-          count += setField("valveSerial", fields.valveSerial);
-          count += setSelect("valveOperation", fields.valveOperation);
+          count += fillCylinderRows(fields.cylinderRows);
           document.getElementById("recordTabBtn")?.click();
           return count;
         }
