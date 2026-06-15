@@ -214,6 +214,17 @@
       gap: 13px;
     }
 
+    .component-line {
+      display: grid;
+      grid-template-columns: 1fr 1fr 180px;
+      gap: 13px;
+      align-items: end;
+    }
+
+    .component-line[hidden] {
+      display: none;
+    }
+
     .field { margin-bottom: 13px; }
 
     .form-block {
@@ -412,7 +423,7 @@
     @media (max-width: 640px) {
       main { padding: 12px; }
       header { padding: 15px; }
-      .grid, .stats { grid-template-columns: 1fr; }
+      .grid, .stats, .component-line { grid-template-columns: 1fr; }
       table, thead, tbody, th, td, tr { display: block; }
       thead { display: none; }
       tr {
@@ -657,44 +668,38 @@
 
           <div class="form-block">
             <h3>Regulador</h3>
-            <div class="grid">
+            <div class="component-line">
               <div class="field">
-                <label for="regulatorActualCode">Actual - Código</label>
-                <input id="regulatorActualCode" placeholder="Código">
+                <label for="regulatorCode">Código regulador</label>
+                <input id="regulatorCode" placeholder="Código">
               </div>
               <div class="field">
-                <label for="regulatorActualSerial">Actual - Número de serie</label>
-                <input id="regulatorActualSerial" placeholder="Número de serie">
+                <label for="regulatorSerial">Número de serie</label>
+                <input id="regulatorSerial" placeholder="Número de serie">
+              </div>
+              <div class="field">
+                <label for="regulatorOperation">Tipo de operación</label>
+                <select id="regulatorOperation">
+                  <option value="[A] Actual">[A] Actual</option>
+                  <option value="[M] Montaje">[M] Montaje</option>
+                  <option value="[D] Desmontaje">[D] Desmontaje</option>
+                  <option value="[B] Baja">[B] Baja</option>
+                  <option value="[BR] Baja por Robo">[BR] Baja por Robo</option>
+                </select>
               </div>
             </div>
-            <div class="grid">
+            <div class="component-line" id="regulatorReplacementLine" hidden>
               <div class="field">
-                <label for="regulatorInstallCode">Montaje - Código</label>
+                <label for="regulatorInstallCode">Código regulador</label>
                 <input id="regulatorInstallCode" placeholder="Código">
               </div>
               <div class="field">
-                <label for="regulatorInstallSerial">Montaje - Número de serie</label>
+                <label for="regulatorInstallSerial">Número de serie</label>
                 <input id="regulatorInstallSerial" placeholder="Número de serie">
               </div>
-            </div>
-            <div class="grid">
               <div class="field">
-                <label for="regulatorRemoveCode">Desmontaje - Código</label>
-                <input id="regulatorRemoveCode" placeholder="Código">
-              </div>
-              <div class="field">
-                <label for="regulatorRemoveSerial">Desmontaje - Número de serie</label>
-                <input id="regulatorRemoveSerial" placeholder="Número de serie">
-              </div>
-            </div>
-            <div class="grid">
-              <div class="field">
-                <label for="regulatorCancelCode">Baja - Código</label>
-                <input id="regulatorCancelCode" placeholder="Código">
-              </div>
-              <div class="field">
-                <label for="regulatorCancelSerial">Baja - Número de serie</label>
-                <input id="regulatorCancelSerial" placeholder="Número de serie">
+                <label for="regulatorInstallOperation">Tipo de operación</label>
+                <input id="regulatorInstallOperation" value="[M] Montaje" disabled>
               </div>
             </div>
           </div>
@@ -990,6 +995,15 @@
         phone: row.phone || "",
         documentType: row.document_type || "",
         documentNumber: row.document_number || "",
+        regulatorCode: row.regulator_cancel_code || row.regulator_remove_code || row.regulator_install_code || row.regulator_actual_code || "",
+        regulatorSerial: row.regulator_cancel_serial || row.regulator_remove_serial || row.regulator_install_serial || row.regulator_actual_serial || "",
+        regulatorOperation: row.regulator_cancel_code || row.regulator_cancel_serial
+          ? "[B] Baja"
+          : row.regulator_remove_code || row.regulator_remove_serial
+            ? "[D] Desmontaje"
+            : row.regulator_install_code || row.regulator_install_serial
+              ? "[M] Montaje"
+              : "[A] Actual",
         regulatorActualCode: row.regulator_actual_code || "",
         regulatorActualSerial: row.regulator_actual_serial || "",
         regulatorInstallCode: row.regulator_install_code || "",
@@ -1098,6 +1112,98 @@
       return parts.join(", ") || client.address || "-";
     }
 
+    function regulatorOperationKind(operation) {
+      if (operation === "[M] Montaje") return "install";
+      if (operation === "[D] Desmontaje") return "remove";
+      if (operation === "[B] Baja" || operation === "[BR] Baja por Robo") return "cancel";
+      return "actual";
+    }
+
+    function isRegulatorCancellation(operation) {
+      return regulatorOperationKind(operation) === "cancel";
+    }
+
+    function regulatorOperationFromLegacy(client) {
+      if (client.regulatorOperation) return client.regulatorOperation;
+      if (client.regulatorCancelCode || client.regulatorCancelSerial) return "[B] Baja";
+      if (client.regulatorRemoveCode || client.regulatorRemoveSerial) return "[D] Desmontaje";
+      if (client.regulatorInstallCode || client.regulatorInstallSerial) return "[M] Montaje";
+      return "[A] Actual";
+    }
+
+    function regulatorLineFromClient(client) {
+      const operation = regulatorOperationFromLegacy(client);
+      const kind = regulatorOperationKind(operation);
+      if (kind === "install" && !isRegulatorCancellation(operation)) {
+        return {
+          code: client.regulatorCode || client.regulatorInstallCode || "",
+          serial: client.regulatorSerial || client.regulatorInstallSerial || "",
+          operation
+        };
+      }
+      if (kind === "remove") {
+        return {
+          code: client.regulatorCode || client.regulatorRemoveCode || "",
+          serial: client.regulatorSerial || client.regulatorRemoveSerial || "",
+          operation
+        };
+      }
+      if (kind === "cancel") {
+        return {
+          code: client.regulatorCode || client.regulatorCancelCode || "",
+          serial: client.regulatorSerial || client.regulatorCancelSerial || "",
+          operation
+        };
+      }
+      return {
+        code: client.regulatorCode || client.regulatorActualCode || "",
+        serial: client.regulatorSerial || client.regulatorActualSerial || "",
+        operation
+      };
+    }
+
+    function regulatorLegacyFields(code, serial, operation, installCode, installSerial) {
+      const fields = {
+        regulatorActualCode: "",
+        regulatorActualSerial: "",
+        regulatorInstallCode: "",
+        regulatorInstallSerial: "",
+        regulatorRemoveCode: "",
+        regulatorRemoveSerial: "",
+        regulatorCancelCode: "",
+        regulatorCancelSerial: ""
+      };
+      const kind = regulatorOperationKind(operation);
+      if (kind === "install") {
+        fields.regulatorInstallCode = code;
+        fields.regulatorInstallSerial = serial;
+      } else if (kind === "remove") {
+        fields.regulatorRemoveCode = code;
+        fields.regulatorRemoveSerial = serial;
+      } else if (kind === "cancel") {
+        fields.regulatorCancelCode = code;
+        fields.regulatorCancelSerial = serial;
+        fields.regulatorInstallCode = installCode;
+        fields.regulatorInstallSerial = installSerial;
+      } else {
+        fields.regulatorActualCode = code;
+        fields.regulatorActualSerial = serial;
+      }
+      return fields;
+    }
+
+    function updateRegulatorReplacementVisibility() {
+      const operation = document.getElementById("regulatorOperation").value;
+      const replacementLine = document.getElementById("regulatorReplacementLine");
+      const showReplacement = isRegulatorCancellation(operation);
+      replacementLine.hidden = !showReplacement;
+      document.getElementById("regulatorInstallOperation").value = "[M] Montaje";
+      if (!showReplacement) {
+        document.getElementById("regulatorInstallCode").value = "";
+        document.getElementById("regulatorInstallSerial").value = "";
+      }
+    }
+
     function readForm() {
       const ownerName = document.getElementById("ownerName").value.trim();
       const documentType = document.getElementById("documentType").value;
@@ -1106,6 +1212,18 @@
       const vehicleModel = document.getElementById("vehicleModel").value.trim();
       const vehicleYear = document.getElementById("vehicleYear").value.trim();
       const vehicleDomain = document.getElementById("vehicleDomain").value.trim().toUpperCase();
+      const regulatorCode = document.getElementById("regulatorCode").value.trim();
+      const regulatorSerial = document.getElementById("regulatorSerial").value.trim();
+      const regulatorOperation = document.getElementById("regulatorOperation").value;
+      const regulatorInstallCode = document.getElementById("regulatorInstallCode").value.trim();
+      const regulatorInstallSerial = document.getElementById("regulatorInstallSerial").value.trim();
+      const legacyRegulator = regulatorLegacyFields(
+        regulatorCode,
+        regulatorSerial,
+        regulatorOperation,
+        regulatorInstallCode,
+        regulatorInstallSerial
+      );
 
       return {
         id: document.getElementById("clientId").value || crypto.randomUUID(),
@@ -1126,14 +1244,10 @@
         phone: document.getElementById("phone").value.trim(),
         documentType,
         documentNumber,
-        regulatorActualCode: document.getElementById("regulatorActualCode").value.trim(),
-        regulatorActualSerial: document.getElementById("regulatorActualSerial").value.trim(),
-        regulatorInstallCode: document.getElementById("regulatorInstallCode").value.trim(),
-        regulatorInstallSerial: document.getElementById("regulatorInstallSerial").value.trim(),
-        regulatorRemoveCode: document.getElementById("regulatorRemoveCode").value.trim(),
-        regulatorRemoveSerial: document.getElementById("regulatorRemoveSerial").value.trim(),
-        regulatorCancelCode: document.getElementById("regulatorCancelCode").value.trim(),
-        regulatorCancelSerial: document.getElementById("regulatorCancelSerial").value.trim(),
+        regulatorCode,
+        regulatorSerial,
+        regulatorOperation,
+        ...legacyRegulator,
         cylinderCode: document.getElementById("cylinderCode").value.trim(),
         cylinderSerial: document.getElementById("cylinderSerial").value.trim(),
         cylinderNew: document.getElementById("cylinderNew").value,
@@ -1184,14 +1298,13 @@
       document.getElementById("phone").value = client.phone || "";
       document.getElementById("documentType").value = client.documentType || "";
       document.getElementById("documentNumber").value = client.documentNumber || "";
-      document.getElementById("regulatorActualCode").value = client.regulatorActualCode || "";
-      document.getElementById("regulatorActualSerial").value = client.regulatorActualSerial || "";
+      const regulatorLine = regulatorLineFromClient(client);
+      document.getElementById("regulatorCode").value = regulatorLine.code;
+      document.getElementById("regulatorSerial").value = regulatorLine.serial;
+      document.getElementById("regulatorOperation").value = regulatorLine.operation;
       document.getElementById("regulatorInstallCode").value = client.regulatorInstallCode || "";
       document.getElementById("regulatorInstallSerial").value = client.regulatorInstallSerial || "";
-      document.getElementById("regulatorRemoveCode").value = client.regulatorRemoveCode || "";
-      document.getElementById("regulatorRemoveSerial").value = client.regulatorRemoveSerial || "";
-      document.getElementById("regulatorCancelCode").value = client.regulatorCancelCode || "";
-      document.getElementById("regulatorCancelSerial").value = client.regulatorCancelSerial || "";
+      updateRegulatorReplacementVisibility();
       document.getElementById("cylinderCode").value = client.cylinderCode || "";
       document.getElementById("cylinderSerial").value = client.cylinderSerial || "";
       document.getElementById("cylinderNew").value = client.cylinderNew || "";
@@ -1218,6 +1331,7 @@
       attachmentInput.value = "";
       formTitle.textContent = "Nuevo registro";
       setTodayOnNewRecord();
+      updateRegulatorReplacementVisibility();
       renderAttachments();
     }
 
@@ -1256,6 +1370,9 @@
         client.vehicleYear,
         client.vehicleType,
         client.waferNumber,
+        client.regulatorCode,
+        client.regulatorSerial,
+        client.regulatorOperation,
         client.regulatorActualCode,
         client.regulatorActualSerial,
         client.regulatorInstallCode,
@@ -1512,6 +1629,7 @@
       showTab("clientsPanel");
     });
 
+    document.getElementById("regulatorOperation").addEventListener("change", updateRegulatorReplacementVisibility);
     attachmentInput.addEventListener("change", async event => {
       const files = await filesToData(event.target.files);
       pendingAttachments = pendingAttachments.concat(files);
@@ -1697,14 +1815,14 @@
         <div class="print-section">
           <h2>Regulador</h2>
           <div class="print-grid">
-            <div><span class="print-label">Actual - Código</span>${escapeHtml(client.regulatorActualCode || "-")}</div>
-            <div><span class="print-label">Actual - Número de serie</span>${escapeHtml(client.regulatorActualSerial || "-")}</div>
-            <div><span class="print-label">Montaje - Código</span>${escapeHtml(client.regulatorInstallCode || "-")}</div>
-            <div><span class="print-label">Montaje - Número de serie</span>${escapeHtml(client.regulatorInstallSerial || "-")}</div>
-            <div><span class="print-label">Desmontaje - Código</span>${escapeHtml(client.regulatorRemoveCode || "-")}</div>
-            <div><span class="print-label">Desmontaje - Número de serie</span>${escapeHtml(client.regulatorRemoveSerial || "-")}</div>
-            <div><span class="print-label">Baja - Código</span>${escapeHtml(client.regulatorCancelCode || "-")}</div>
-            <div><span class="print-label">Baja - Número de serie</span>${escapeHtml(client.regulatorCancelSerial || "-")}</div>
+            <div><span class="print-label">Código regulador</span>${escapeHtml(regulatorLineFromClient(client).code || "-")}</div>
+            <div><span class="print-label">Número de serie</span>${escapeHtml(regulatorLineFromClient(client).serial || "-")}</div>
+            <div><span class="print-label">Tipo de operación</span>${escapeHtml(regulatorLineFromClient(client).operation || "-")}</div>
+            ${isRegulatorCancellation(regulatorLineFromClient(client).operation) ? `
+              <div><span class="print-label">Montaje - Código regulador</span>${escapeHtml(client.regulatorInstallCode || "-")}</div>
+              <div><span class="print-label">Montaje - Número de serie</span>${escapeHtml(client.regulatorInstallSerial || "-")}</div>
+              <div><span class="print-label">Montaje - Tipo de operación</span>[M] Montaje</div>
+            ` : ""}
           </div>
         </div>
         <div class="print-section">

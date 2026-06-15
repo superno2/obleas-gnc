@@ -203,6 +203,7 @@ async function extractEnargasData(tabId) {
           vehicleType: findValue("Uso"),
           regulatorActualCode: regulator.code,
           regulatorActualSerial: regulator.serial,
+          regulatorOperation: regulator.operation,
           cylinderCode: cylinder.code,
           cylinderSerial: cylinder.serial,
           cylinderOperation: cylinder.operation,
@@ -296,6 +297,16 @@ async function fillRegistro(data) {
             return 1;
           }
 
+          function normalizeRegulatorOperation(value) {
+            const key = normalizeKey(value);
+            if (!key || key === "sin cambios" || key === "actual" || key === "a") return "[A] Actual";
+            if (key === "montaje" || key === "m") return "[M] Montaje";
+            if (key === "desmontaje" || key === "d") return "[D] Desmontaje";
+            if (key === "baja" || key === "b") return "[B] Baja";
+            if (key === "baja por robo" || key === "br") return "[BR] Baja por Robo";
+            return value;
+          }
+
           const fields = imported.fields || {};
           let count = 0;
           count += setField("waferNumber", fields.waferNumber);
@@ -305,8 +316,9 @@ async function fillRegistro(data) {
           count += setField("vehicleYear", fields.vehicleYear);
           count += setField("vehicleDomain", fields.vehicleDomain);
           count += setSelect("vehicleType", fields.vehicleType);
-          count += setField("regulatorActualCode", fields.regulatorActualCode);
-          count += setField("regulatorActualSerial", fields.regulatorActualSerial);
+          count += setField("regulatorCode", fields.regulatorActualCode);
+          count += setField("regulatorSerial", fields.regulatorActualSerial);
+          count += setSelect("regulatorOperation", normalizeRegulatorOperation(fields.regulatorOperation));
           count += setField("cylinderCode", fields.cylinderCode);
           count += setField("cylinderSerial", fields.cylinderSerial);
           count += setSelect("cylinderOperation", fields.cylinderOperation);
