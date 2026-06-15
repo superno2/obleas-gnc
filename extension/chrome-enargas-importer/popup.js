@@ -316,10 +316,6 @@ async function fillRegistro(data) {
           count += setField("valveCode", fields.valveCode);
           count += setField("valveSerial", fields.valveSerial);
           count += setSelect("valveOperation", fields.valveOperation);
-          count += setField("enargasText", imported.raw);
-
-          const status = document.getElementById("importStatus");
-          if (status) status.textContent = count ? `Se importaron ${count} dato/s desde la extensión.` : "La extensión no encontró datos para completar.";
           document.getElementById("recordTabBtn")?.click();
           return count;
         }

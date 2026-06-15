@@ -8,12 +8,5 @@
   "action": {
     "default_title": "Importar ENARGAS",
     "default_popup": "popup.html"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["app-content.js"],
-      "run_at": "document_idle"
-    }
-  ]
+  }
 }
