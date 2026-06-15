@@ -516,6 +516,7 @@
         <div class="actions">
           <button type="submit">Ingresar</button>
           <button class="ghost" id="signupBtn" type="button">Crear cuenta</button>
+          <button class="ghost" id="forgotPasswordBtn" type="button">Recuperar contraseña</button>
         </div>
         <p class="muted">Con Supabase configurado, esta cuenta se valida online.</p>
       </div>
@@ -869,6 +870,7 @@
     const STORAGE_KEY = "gnc_clientes_beta_v1";
     const SESSION_KEY = "gnc_sesion_beta_v1";
     const WARNING_DAYS = 30;
+    const ONLINE_APP_URL = "https://obleas-gnc-git-main-obleas-gnc.vercel.app";
 
     const appShell = document.getElementById("appShell");
     const loginScreen = document.getElementById("loginScreen");
@@ -1750,6 +1752,31 @@
       await showApp(session);
     }
 
+    function recoveryRedirectUrl() {
+      if (window.location.protocol === "file:") return ONLINE_APP_URL;
+      return `${window.location.origin}${window.location.pathname}`;
+    }
+
+    async function handlePasswordRecoverySession() {
+      if (!supabaseClient || !window.location.hash.includes("type=recovery")) return false;
+      const newPassword = prompt("Ingresá tu nueva contraseña. Mínimo 6 caracteres.");
+      if (!newPassword) return true;
+      if (newPassword.length < 6) {
+        alert("La contraseña debe tener al menos 6 caracteres.");
+        return true;
+      }
+      const result = await supabaseClient.auth.updateUser({ password: newPassword });
+      if (result.error) {
+        alert(result.error.message);
+        return true;
+      }
+      alert("Contraseña actualizada. Ya podés ingresar con la nueva contraseña.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+      await supabaseClient.auth.signOut();
+      showLogin();
+      return true;
+    }
+
     loginForm.addEventListener("submit", async event => {
       event.preventDefault();
       const email = document.getElementById("loginName").value.trim();
@@ -1789,6 +1816,27 @@
         return;
       }
       await startSession(result.data.user, email);
+    });
+
+    document.getElementById("forgotPasswordBtn").addEventListener("click", async () => {
+      const email = document.getElementById("loginName").value.trim();
+      if (!email) {
+        alert("Ingresá tu email y después tocá Recuperar contraseña.");
+        document.getElementById("loginName").focus();
+        return;
+      }
+      if (!supabaseClient) {
+        alert("La recuperación de contraseña requiere Supabase configurado.");
+        return;
+      }
+      const result = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: recoveryRedirectUrl()
+      });
+      if (result.error) {
+        alert(result.error.message);
+        return;
+      }
+      alert("Te mandamos un email para recuperar la contraseña. Abrí el link y cargá una nueva.");
     });
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {
@@ -2076,6 +2124,7 @@
         const { data } = await supabaseClient.auth.getSession();
         currentUser = data.session?.user || null;
       }
+      if (await handlePasswordRecoverySession()) return;
       const activeSession = loadSession();
       if (activeSession && (!supabaseClient || currentUser)) await showApp(activeSession);
       else showLogin();
