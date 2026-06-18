@@ -589,6 +589,16 @@
             </div>
           </div>
 
+          <div class="field">
+            <label for="pecId">PEC</label>
+            <select id="pecId">
+              <option value="gvd">GVD</option>
+              <option value="macrocil">Macrocil</option>
+              <option value="lf">LF</option>
+              <option value="bh">B&H</option>
+            </select>
+          </div>
+
           <div class="form-block">
             <h3>Vehículo</h3>
             <div class="grid">
@@ -817,6 +827,64 @@
     const SESSION_KEY = "gnc_sesion_beta_v1";
     const WARNING_DAYS = 30;
     const ONLINE_APP_URL = "https://obleas-gnc-git-main-obleas-gnc.vercel.app";
+    const PEC_PRESETS = {
+      gvd: {
+        id: "gvd",
+        name: "GVD",
+        businessName: "G.V.D. GAS DE SILVIA NOEMI DIAZ",
+        code: "3161",
+        workshopCode: "LET0109",
+        cuit: "27-11727944-3",
+        address: "AV. DON BOSCO 5226/8",
+        province: "Buenos Aires",
+        city: "Rafael Castillo",
+        phone: "44850725",
+        rt: "SAVOINI ALEJANDRO GUSTAVO",
+        rtDocument: "DNI - 14611310"
+      },
+      macrocil: {
+        id: "macrocil",
+        name: "Macrocil",
+        businessName: "Macrocil",
+        code: "",
+        workshopCode: "",
+        cuit: "",
+        address: "",
+        province: "",
+        city: "",
+        phone: "",
+        rt: "",
+        rtDocument: ""
+      },
+      lf: {
+        id: "lf",
+        name: "LF",
+        businessName: "LF",
+        code: "",
+        workshopCode: "",
+        cuit: "",
+        address: "",
+        province: "",
+        city: "",
+        phone: "",
+        rt: "",
+        rtDocument: ""
+      },
+      bh: {
+        id: "bh",
+        name: "B&H",
+        businessName: "B&H",
+        code: "",
+        workshopCode: "",
+        cuit: "",
+        address: "",
+        province: "",
+        city: "",
+        phone: "",
+        rt: "",
+        rtDocument: ""
+      }
+    };
 
     const appShell = document.getElementById("appShell");
     const loginScreen = document.getElementById("loginScreen");
@@ -946,6 +1014,7 @@
         id: row.id,
         procedureDate: row.procedure_date,
         waferNumber: row.wafer_number || "",
+        pecId: row.pec_id || "gvd",
         vehicleBrand: row.vehicle_brand || "",
         vehicleModel: row.vehicle_model || "",
         vehicleYear: row.vehicle_year || "",
@@ -1087,6 +1156,10 @@
         client.province
       ].filter(Boolean);
       return parts.join(", ") || client.address || "-";
+    }
+
+    function pecForClient(client) {
+      return PEC_PRESETS[client.pecId] || PEC_PRESETS.gvd;
     }
 
     function regulatorOperationKind(operation) {
@@ -1335,6 +1408,7 @@
         id: document.getElementById("clientId").value || crypto.randomUUID(),
         procedureDate: document.getElementById("procedureDate").dataset.iso || todayIso(),
         waferNumber: document.getElementById("waferNumber").value.trim(),
+        pecId: document.getElementById("pecId").value,
         vehicleBrand,
         vehicleModel,
         vehicleYear,
@@ -1390,6 +1464,7 @@
       document.getElementById("procedureDate").value = formatShortDate(procedureDate);
       document.getElementById("procedureDate").dataset.iso = procedureDate;
       document.getElementById("waferNumber").value = client.waferNumber || "";
+      document.getElementById("pecId").value = client.pecId || "gvd";
       document.getElementById("vehicleBrand").value = client.vehicleBrand || "";
       document.getElementById("vehicleModel").value = client.vehicleModel || "";
       document.getElementById("vehicleYear").value = client.vehicleYear || "";
@@ -1469,6 +1544,8 @@
         client.vehicleYear,
         client.vehicleType,
         client.waferNumber,
+        pecForClient(client).name,
+        pecForClient(client).businessName,
         client.regulatorCode,
         client.regulatorSerial,
         client.regulatorOperation,
@@ -1768,6 +1845,7 @@
           id: crypto.randomUUID(),
           procedureDate: todayIso(),
           waferNumber: "OB-45892",
+          pecId: "gvd",
           vehicleBrand: "Chevrolet",
           vehicleModel: "Classic",
           vehicleYear: "2015",
@@ -1816,6 +1894,7 @@
           id: crypto.randomUUID(),
           procedureDate: todayIso(),
           waferNumber: "OB-77801",
+          pecId: "macrocil",
           vehicleBrand: "Fiat",
           vehicleModel: "Siena",
           vehicleYear: "2013",
@@ -1903,10 +1982,27 @@
       if (!client) return;
       const status = dateStatus(client);
       const cylinderRows = cylinderRowsFromClient(client);
+      const pec = pecForClient(client);
       printArea.innerHTML = `
         <div class="print-title">
-          <h1>Ficha de cliente GNC</h1>
+          <h1>Ficha de cliente GNC - ${escapeHtml(pec.name)}</h1>
           <p>Fecha del trámite: ${formatShortDate(client.procedureDate || todayIso())}</p>
+        </div>
+        <div class="print-section">
+          <h2>PEC</h2>
+          <div class="print-grid">
+            <div><span class="print-label">PEC</span>${escapeHtml(pec.name || "-")}</div>
+            <div><span class="print-label">Razón social</span>${escapeHtml(pec.businessName || "-")}</div>
+            <div><span class="print-label">Código PEC</span>${escapeHtml(pec.code || "-")}</div>
+            <div><span class="print-label">Código taller</span>${escapeHtml(pec.workshopCode || "-")}</div>
+            <div><span class="print-label">CUIT</span>${escapeHtml(pec.cuit || "-")}</div>
+            <div><span class="print-label">Domicilio</span>${escapeHtml(pec.address || "-")}</div>
+            <div><span class="print-label">Localidad</span>${escapeHtml(pec.city || "-")}</div>
+            <div><span class="print-label">Provincia</span>${escapeHtml(pec.province || "-")}</div>
+            <div><span class="print-label">Teléfono</span>${escapeHtml(pec.phone || "-")}</div>
+            <div><span class="print-label">RT</span>${escapeHtml(pec.rt || "-")}</div>
+            <div><span class="print-label">Documento RT</span>${escapeHtml(pec.rtDocument || "-")}</div>
+          </div>
         </div>
         <div class="print-grid">
           <div><span class="print-label">Número de oblea</span>${escapeHtml(client.waferNumber || "-")}</div>
