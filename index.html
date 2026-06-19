@@ -478,11 +478,16 @@
     }
 
     @media print {
+      @page {
+        size: A4;
+        margin: 7mm;
+      }
+
       body { background: #fff; }
       header, main { display: none; }
       .print-area {
         display: block;
-        padding: 26px;
+        padding: 0;
         color: #111;
       }
       .print-title {
@@ -513,6 +518,190 @@
       .print-section h2 {
         font-size: 15px;
         margin: 0 0 8px;
+      }
+
+      .gvd-sheet {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 8.5px;
+        line-height: 1.15;
+        color: #111;
+        border: 1.5px solid #111;
+        width: 100%;
+      }
+
+      .gvd-grid {
+        display: grid;
+        grid-template-columns: 59% 41%;
+        border-bottom: 1px solid #111;
+      }
+
+      .gvd-header-left,
+      .gvd-header-right,
+      .gvd-block,
+      .gvd-cell {
+        border-right: 1px solid #111;
+        padding: 4px;
+      }
+
+      .gvd-header-right,
+      .gvd-grid > :last-child,
+      .gvd-row > :last-child {
+        border-right: 0;
+      }
+
+      .gvd-brand {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 8px;
+      }
+
+      .gvd-logo {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: 0;
+        border: 1px solid #777;
+        text-align: center;
+        padding: 12px 0;
+      }
+
+      .gvd-row {
+        display: grid;
+        border-bottom: 1px solid #111;
+      }
+
+      .gvd-row:last-child {
+        border-bottom: 0;
+      }
+
+      .gvd-vehicle {
+        grid-template-columns: 7% 52% 41%;
+      }
+
+      .gvd-owner {
+        grid-template-columns: 7% 93%;
+      }
+
+      .gvd-regulator {
+        grid-template-columns: 7% 53% 13% 14% 13%;
+      }
+
+      .gvd-components {
+        grid-template-columns: 7% 64% 29%;
+      }
+
+      .gvd-accessories {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        border-bottom: 1px solid #111;
+      }
+
+      .gvd-accessories.second {
+        grid-template-columns: repeat(3, 1fr) repeat(3, 1fr);
+      }
+
+      .gvd-side-title {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        text-align: center;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        border-right: 1px solid #111;
+        padding: 4px 0;
+      }
+
+      .gvd-title {
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 10px;
+      }
+
+      .gvd-field-line {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        margin-top: 4px;
+      }
+
+      .gvd-field-line.two {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .gvd-field-line.four {
+        grid-template-columns: 1fr 1fr 90px 90px;
+      }
+
+      .gvd-mini-label {
+        text-align: center;
+        color: #333;
+        display: block;
+      }
+
+      .gvd-box {
+        display: block;
+        min-height: 18px;
+        border: 1px solid #555;
+        padding: 3px 4px;
+        font-size: 10px;
+        overflow: hidden;
+      }
+
+      .gvd-checkbox {
+        display: inline-grid;
+        place-items: center;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #555;
+        margin: 0 3px;
+        font-weight: 800;
+      }
+
+      .gvd-checkline {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin-top: 5px;
+      }
+
+      .gvd-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .gvd-table th,
+      .gvd-table td {
+        border: 1px solid #555;
+        padding: 2px;
+        height: 20px;
+        font-size: 8.5px;
+        text-align: center;
+      }
+
+      .gvd-table th {
+        font-weight: 700;
+      }
+
+      .gvd-signature {
+        min-height: 54px;
+        border-bottom: 1px solid #111;
+        padding: 6px;
+      }
+
+      .gvd-signature strong {
+        display: block;
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+
+      .gvd-sign-line {
+        border-top: 1px solid #111;
+        width: 38%;
+        margin-left: auto;
+        margin-top: 20px;
+        text-align: center;
+        padding-top: 3px;
       }
     }
   </style>
@@ -1671,6 +1860,240 @@
         .replaceAll("'", "&#039;");
     }
 
+    function gvdBox(value) {
+      return `<span class="gvd-box">${escapeHtml(value || "")}</span>`;
+    }
+
+    function gvdCheck(active) {
+      return `<span class="gvd-checkbox">${active ? "X" : ""}</span>`;
+    }
+
+    function componentOperationCode(value) {
+      const text = String(value || "").toLowerCase();
+      if (text.includes("baja")) return "B";
+      if (text.includes("desmontaje")) return "D";
+      if (text.includes("montaje") || text.includes("modific")) return "M";
+      return "S";
+    }
+
+    function procedureOperationCode(client) {
+      const values = [
+        regulatorLineFromClient(client).operation,
+        ...cylinderRowsFromClient(client).flatMap(row => [row.cylinderOperation, row.valveOperation])
+      ].join(" ").toLowerCase();
+      if (values.includes("baja")) return "B";
+      if (values.includes("desmontaje")) return "D";
+      if (values.includes("montaje") || values.includes("modific")) return "M";
+      return "R";
+    }
+
+    function splitMonthYear(value) {
+      const match = String(value || "").match(/(\d{1,2})\s*[\/.-]\s*(\d{2,4})/);
+      if (!match) return { month: "", year: "" };
+      return {
+        month: match[1].padStart(2, "0"),
+        year: match[2].length === 4 ? match[2].slice(-2) : match[2]
+      };
+    }
+
+    function gvdRegulatorCells(client) {
+      const line = regulatorLineFromClient(client);
+      const operation = regulatorOperationKind(line.operation);
+      const map = {
+        actual: { code: "", serial: "" },
+        install: { code: "", serial: "" },
+        remove: { code: "", serial: "" },
+        cancel: { code: "", serial: "" }
+      };
+      map[operation] = { code: line.code, serial: line.serial };
+      return map;
+    }
+
+    function renderGvdTemplate(client, status, pec) {
+      const operation = procedureOperationCode(client);
+      const regulator = gvdRegulatorCells(client);
+      const cylinders = cylinderRowsFromClient(client).slice(0, 4);
+      while (cylinders.length < 4) cylinders.push(emptyCylinderRow());
+      const ownerStreet = [client.ownerStreet, client.ownerStreetNumber].filter(Boolean).join(" ");
+      const documentText = [client.documentType, client.documentNumber].filter(Boolean).join(" ");
+      const cylinderRowsHtml = cylinders.map(row => {
+        const fab = splitMonthYear(row.cylinderManufactureDate);
+        const review = splitMonthYear(row.cylinderReviewDate);
+        return `
+          <tr>
+            <td>${escapeHtml(row.cylinderCode)}</td>
+            <td>${escapeHtml(row.cylinderSerial)}</td>
+            <td>${gvdCheck(false)}</td>
+            <td>${gvdCheck(Boolean(row.cylinderCode || row.cylinderSerial))}</td>
+            <td>${escapeHtml(fab.month)}</td>
+            <td>${escapeHtml(fab.year)}</td>
+            <td>${escapeHtml(review.month)}</td>
+            <td>${escapeHtml(review.year)}</td>
+            <td>${escapeHtml(row.cylinderCrpc)}</td>
+            <td>${escapeHtml(componentOperationCode(row.cylinderOperation))}</td>
+          </tr>
+        `;
+      }).join("");
+      const valveRowsHtml = cylinders.map(row => `
+        <tr>
+          <td>${escapeHtml(row.valveCode)}</td>
+          <td>${escapeHtml(row.valveSerial)}</td>
+          <td>${escapeHtml(componentOperationCode(row.valveOperation))}</td>
+        </tr>
+      `).join("");
+
+      return `
+        <div class="gvd-sheet">
+          <div class="gvd-grid">
+            <div class="gvd-header-left">
+              <div class="gvd-brand">
+                <div class="gvd-logo">GVD<br>GAS</div>
+                <div>
+                  <strong>Representante Técnico del PEC</strong><br>
+                  Ing. Pablo A. M. Oses - Mat. Profesión N° 4676<br>
+                  Av. Don Bosco 5226/28, Rafael Castillo - C.P. (1755)<br>
+                  Provincia de Buenos Aires - República Argentina<br>
+                  Tel./Fax: 4485-0725 / 4466-0282<br>
+                  E-mail: gvd_gnc@yahoo.com.ar
+                </div>
+              </div>
+              <div class="gvd-field-line two">
+                <div><span class="gvd-mini-label">Razón Social Taller</span>${gvdBox(pec.businessName)}</div>
+                <div><span class="gvd-mini-label">Control N°</span>${gvdBox("")}</div>
+              </div>
+              <div class="gvd-field-line two">
+                <div><span class="gvd-mini-label">Dirección</span>${gvdBox(pec.address)}</div>
+                <div><span class="gvd-mini-label">N° de CUIT del TdM</span>${gvdBox(pec.cuit)}</div>
+              </div>
+            </div>
+            <div class="gvd-header-right">
+              <div class="gvd-field-line four">
+                <div><span class="gvd-mini-label">Habilitación</span>${gvdBox(formatDate(client.procedureDate || todayIso()))}</div>
+                <div><span class="gvd-mini-label">Vencimiento</span>${gvdBox(formatDate(client.waferDue))}</div>
+                <div><span class="gvd-mini-label">Oblea anterior</span>${gvdBox("")}</div>
+                <div><span class="gvd-mini-label">Oblea nueva</span>${gvdBox(client.waferNumber)}</div>
+              </div>
+              <div class="gvd-field-line two">
+                <div><span class="gvd-mini-label">Código PEC</span>${gvdBox(pec.code)}</div>
+                <div><span class="gvd-mini-label">Código taller</span>${gvdBox(pec.workshopCode)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gvd-row gvd-vehicle">
+            <div class="gvd-side-title">VEHÍCULO</div>
+            <div class="gvd-cell">
+              <div class="gvd-field-line">
+                <div><span class="gvd-mini-label">Marca</span>${gvdBox(client.vehicleBrand)}</div>
+                <div><span class="gvd-mini-label">Modelo</span>${gvdBox(client.vehicleModel)}</div>
+                <div><span class="gvd-mini-label">Año</span>${gvdBox(client.vehicleYear)}</div>
+              </div>
+              <div class="gvd-field-line two">
+                <div><span class="gvd-mini-label">Dominio</span>${gvdBox(client.vehicleDomain || client.plate)}</div>
+                <div class="gvd-checkline">
+                  Inyección SI ${gvdCheck(client.injection === "Sí")} NO ${gvdCheck(client.injection === "No")}
+                  Taxi ${gvdCheck(client.vehicleType === "Taxi")}
+                  Pick-up ${gvdCheck(client.vehicleType === "Pick-up")}
+                  Part. ${gvdCheck(client.vehicleType === "Particular")}
+                  Bus ${gvdCheck(client.vehicleType === "Bus")}
+                  Oficial ${gvdCheck(client.vehicleType === "Oficial")}
+                  Otros ${gvdCheck(client.vehicleType === "Otros")}
+                </div>
+              </div>
+            </div>
+            <div class="gvd-cell">
+              <div class="gvd-title">Tipo de operación</div>
+              <div class="gvd-checkline">
+                Conversión C ${gvdCheck(operation === "C")}
+                Modificación M ${gvdCheck(operation === "M")}
+                Rev. anual R ${gvdCheck(operation === "R")}
+                Desmontaje D ${gvdCheck(operation === "D")}
+                Baja B ${gvdCheck(operation === "B")}
+              </div>
+            </div>
+          </div>
+
+          <div class="gvd-row gvd-owner">
+            <div class="gvd-side-title">PROPIETARIO</div>
+            <div class="gvd-cell">
+              <div class="gvd-field-line two">
+                <div><span class="gvd-mini-label">Nombre y Apellido</span>${gvdBox(client.ownerName || client.fullName)}</div>
+                <div><span class="gvd-mini-label">Calle</span>${gvdBox(ownerStreet)}</div>
+              </div>
+              <div class="gvd-field-line four">
+                <div><span class="gvd-mini-label">Localidad</span>${gvdBox(client.city)}</div>
+                <div><span class="gvd-mini-label">Provincia</span>${gvdBox(client.province)}</div>
+                <div><span class="gvd-mini-label">Teléfono</span>${gvdBox(client.phone)}</div>
+                <div><span class="gvd-mini-label">Tipo y N° de Documento</span>${gvdBox(documentText)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gvd-row gvd-regulator">
+            <div class="gvd-side-title">REGULADOR</div>
+            <div class="gvd-cell">
+              <table class="gvd-table">
+                <tr><th></th><th>Actual</th><th>Montaje</th><th>Desmontaje</th><th>Baja</th><th>Nuevo</th><th>Usado</th></tr>
+                <tr><th>Código</th><td>${escapeHtml(regulator.actual.code)}</td><td>${escapeHtml(regulator.install.code)}</td><td>${escapeHtml(regulator.remove.code)}</td><td>${escapeHtml(regulator.cancel.code)}</td><td>${gvdCheck(false)}</td><td>${gvdCheck(Boolean(regulator.actual.code || regulator.install.code))}</td></tr>
+                <tr><th>N° Serie</th><td>${escapeHtml(regulator.actual.serial)}</td><td>${escapeHtml(regulator.install.serial)}</td><td>${escapeHtml(regulator.remove.serial)}</td><td>${escapeHtml(regulator.cancel.serial)}</td><td></td><td></td></tr>
+              </table>
+            </div>
+            <div class="gvd-cell"><span class="gvd-mini-label">Manómetro</span>${gvdBox("")}${gvdBox("")}</div>
+            <div class="gvd-cell"><span class="gvd-mini-label">Accesorios p/tubería</span>${gvdBox("")}${gvdBox("")}</div>
+            <div class="gvd-cell"><span class="gvd-mini-label">Tuberías alta presión</span>${gvdBox("")}${gvdBox("")}</div>
+          </div>
+
+          <div class="gvd-row gvd-components">
+            <div class="gvd-side-title">CILINDROS</div>
+            <div class="gvd-cell">
+              <table class="gvd-table">
+                <tr><th>Código</th><th>N° Serie</th><th>Nuevo</th><th>Usado</th><th>Fab. Mes</th><th>Fab. Año</th><th>Rev. Mes</th><th>Rev. Año</th><th>CRPC</th><th>M/S/D/B</th></tr>
+                ${cylinderRowsHtml}
+              </table>
+            </div>
+            <div class="gvd-cell">
+              <div class="gvd-title">VÁLVULA DEL CILINDRO</div>
+              <table class="gvd-table">
+                <tr><th>Código</th><th>N° Serie</th><th>M/S/D/B</th></tr>
+                ${valveRowsHtml}
+              </table>
+            </div>
+          </div>
+
+          <div class="gvd-accessories">
+            ${["Disp. sujeción cilindro", "Electroválvula Nafta", "Electroválvula GNC", "Dosif./Mezclador", "Sistema de venteo", "Llave conmutador"].map(title => `
+              <div class="gvd-cell"><strong>${title}</strong>${gvdBox("")}${gvdBox("")}</div>
+            `).join("")}
+          </div>
+          <div class="gvd-accessories second">
+            ${["Válvula carga Interna", "Válvula carga Externa", "Manguera baja presión"].map(title => `
+              <div class="gvd-cell"><strong>${title}</strong>${gvdBox("")}${gvdBox("")}</div>
+            `).join("")}
+          </div>
+
+          <div class="gvd-signature">
+            <strong>OBSERVACIONES:</strong>
+            ${escapeHtml(client.notes || "")}
+          </div>
+          <div class="gvd-signature">
+            <strong>TALLER DE MONTAJE:</strong>
+            CERTIFICO haber efectuado la operación indicada en esta Ficha Técnica de acuerdo con el procedimiento y capacitación recibida del PEC habilitante.
+            <div class="gvd-sign-line">Firma aclaración y N° de Matrícula del Representante Técnico del TdM</div>
+          </div>
+          <div class="gvd-signature">
+            <strong>PROPIETARIO:</strong>
+            Tomo conocimiento del vencimiento de la habilitación del equipo para GNC y certifico haber recibido la documentación correspondiente.
+            <div class="gvd-sign-line">Firma aclaración y N° de Documento del Propietario</div>
+          </div>
+          <div class="gvd-signature">
+            <strong>Productor de Equipos Completos (PEC)</strong>
+            CERTIFICO la autenticidad de los datos, y que la operación indicada en esta Ficha Técnica se efectuó conforme a la normativa vigente del ENARGAS.
+            <div class="gvd-sign-line">Rep. Técnico del PEC</div>
+          </div>
+        </div>
+      `;
+    }
+
     async function filesToData(files) {
       const readers = Array.from(files).map(file => new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1983,6 +2406,11 @@
       const status = dateStatus(client);
       const cylinderRows = cylinderRowsFromClient(client);
       const pec = pecForClient(client);
+      if (pec.id === "gvd") {
+        printArea.innerHTML = renderGvdTemplate(client, status, pec);
+        window.print();
+        return;
+      }
       printArea.innerHTML = `
         <div class="print-title">
           <h1>Ficha de cliente GNC - ${escapeHtml(pec.name)}</h1>
