@@ -6,20 +6,20 @@
   <title>Registro GNC - Beta local</title>
   <style>
     :root {
-      --bg: #f4f6f8;
+      --bg: #fff5f5;
       --panel: #ffffff;
-      --ink: #1f2933;
-      --muted: #657381;
-      --line: #d9e1e8;
-      --brand: #176b87;
-      --brand-dark: #104f65;
-      --ok: #13795b;
-      --warn: #b7791f;
-      --bad: #b42318;
-      --soft-ok: #e7f6ef;
-      --soft-warn: #fff4d8;
-      --soft-bad: #ffe8e5;
-      --focus: #f0b429;
+      --ink: #2b1215;
+      --muted: #7f4b52;
+      --line: #efc5ca;
+      --brand: #b4232f;
+      --brand-dark: #7f1d1d;
+      --ok: #8f1d2c;
+      --warn: #b45309;
+      --bad: #7f1d1d;
+      --soft-ok: #fde8eb;
+      --soft-warn: #fff1dd;
+      --soft-bad: #fee2e2;
+      --focus: #fb7185;
       font-family: Arial, Helvetica, sans-serif;
     }
 
@@ -32,7 +32,7 @@
     }
 
     header {
-      background: #0f2530;
+      background: #5f1018;
       color: #fff;
       padding: 18px 24px;
       display: flex;
@@ -51,7 +51,7 @@
 
     header p {
       margin: 4px 0 0;
-      color: #b7c8d3;
+      color: #ffd6dc;
       font-size: 14px;
     }
 
@@ -67,7 +67,7 @@
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 999px;
       padding: 7px 11px;
-      color: #dce7ee;
+      color: #ffe4e8;
       font-size: 13px;
       background: rgba(255, 255, 255, 0.08);
       max-width: 260px;
@@ -81,7 +81,7 @@
       display: grid;
       place-items: center;
       padding: 22px;
-      background: linear-gradient(135deg, #0f2530, #176b87 55%, #f4f6f8 55%);
+      background: linear-gradient(135deg, #5f1018, #b4232f 55%, #fff5f5 55%);
     }
 
     .login-box {
@@ -89,13 +89,13 @@
       background: #fff;
       border: 1px solid var(--line);
       border-radius: 8px;
-      box-shadow: 0 20px 50px rgba(15, 37, 48, 0.22);
+      box-shadow: 0 20px 50px rgba(95, 16, 24, 0.22);
       overflow: hidden;
     }
 
     .login-head {
       padding: 22px;
-      background: #0f2530;
+      background: #5f1018;
       color: #fff;
     }
 
@@ -106,7 +106,7 @@
 
     .login-head p {
       margin: 0;
-      color: #b7c8d3;
+      color: #ffd6dc;
       font-size: 14px;
     }
 
@@ -127,7 +127,7 @@
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
-      box-shadow: 0 8px 18px rgba(15, 37, 48, 0.06);
+      box-shadow: 0 8px 18px rgba(95, 16, 24, 0.08);
     }
 
     .tabs {
@@ -140,13 +140,13 @@
     }
 
     .tab-button {
-      background: #eef3f6;
-      color: #1d3946;
-      border: 1px solid #c9d7df;
+      background: #fff1f2;
+      color: #7f1d1d;
+      border: 1px solid #fecdd3;
     }
 
     .tab-button:hover {
-      background: #dfe9ee;
+      background: #ffe4e6;
     }
 
     .tab-button.active {
@@ -182,14 +182,14 @@
     label {
       display: block;
       font-size: 13px;
-      color: #344553;
+      color: #5f2029;
       font-weight: 700;
       margin-bottom: 6px;
     }
 
     input, textarea, select {
       width: 100%;
-      border: 1px solid #bcc8d3;
+      border: 1px solid #e7a8b0;
       border-radius: 6px;
       padding: 10px 11px;
       font-size: 14px;
@@ -203,7 +203,7 @@
     }
 
     input:focus, textarea:focus, select:focus, button:focus {
-      outline: 3px solid rgba(240, 180, 41, 0.35);
+      outline: 3px solid rgba(251, 113, 133, 0.32);
       outline-offset: 1px;
       border-color: var(--focus);
     }
@@ -238,7 +238,7 @@
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fbfcfd;
+      background: #fffafa;
     }
 
     .cylinder-row .field {
@@ -266,7 +266,7 @@
     .form-block h3 {
       margin: 0 0 13px;
       font-size: 14px;
-      color: #223746;
+      color: #5f1018;
       text-transform: uppercase;
       letter-spacing: 0;
     }
@@ -306,20 +306,20 @@
     button:hover { background: var(--brand-dark); }
 
     .ghost {
-      background: #eef3f6;
-      color: #1d3946;
-      border: 1px solid #c9d7df;
+      background: #fff1f2;
+      color: #7f1d1d;
+      border: 1px solid #fecdd3;
     }
 
-    .ghost:hover { background: #dfe9ee; }
+    .ghost:hover { background: #ffe4e6; }
 
     .danger {
-      background: #fff1ef;
+      background: #fff1f2;
       color: var(--bad);
-      border: 1px solid #ffc8c1;
+      border: 1px solid #fecdd3;
     }
 
-    .danger:hover { background: #ffe1dd; }
+    .danger:hover { background: #ffe4e6; }
 
     .top-tools {
       display: grid;
@@ -339,7 +339,7 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 12px;
-      background: #fbfcfd;
+      background: #fffafa;
     }
 
     .stat strong {
@@ -368,14 +368,14 @@
     }
 
     th {
-      color: #405465;
+      color: #6f2730;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0;
-      background: #f7fafc;
+      background: #fff1f2;
     }
 
-    tr:hover td { background: #fafcfd; }
+    tr:hover td { background: #fff7f8; }
 
     .badge {
       display: inline-block;
@@ -417,7 +417,7 @@
       border: 1px solid var(--line);
       border-radius: 6px;
       overflow: hidden;
-      background: #f8fafb;
+      background: #fffafa;
       min-height: 82px;
       display: flex;
       align-items: center;
@@ -439,9 +439,9 @@
       padding: 28px;
       text-align: center;
       color: var(--muted);
-      border: 1px dashed #bac6d0;
+      border: 1px dashed #e7a8b0;
       border-radius: 8px;
-      background: #fbfcfd;
+      background: #fffafa;
     }
 
     .print-area { display: none; }
